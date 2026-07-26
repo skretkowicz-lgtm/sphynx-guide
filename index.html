@@ -1,0 +1,758 @@
+<title>Canadian Sphynx — Owner's Guide / Przewodnik dla Właścicieli</title>
+<style>
+  :root {
+    --ground: #edeae4;
+    --surface: #faf8f5;
+    --ink: #221f1b;
+    --ink-soft: #6b6459;
+    --accent: #8a5a3b;
+    --accent-ink: #fbf7f2;
+    --accent-soft: #e6d5c3;
+    --line: #d9d2c6;
+    --focus: #3d6b63;
+    --danger: #a3432c;
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #1a1713;
+    --surface: #221e19;
+    --ink: #f1ece3;
+    --ink-soft: #b5aa9a;
+    --accent: #dd9a63;
+    --accent-ink: #241a10;
+    --accent-soft: #3c2e21;
+    --line: #3a332a;
+    --focus: #6fa89d;
+    --danger: #e0836a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1a1713;
+      --surface: #221e19;
+      --ink: #f1ece3;
+      --ink-soft: #b5aa9a;
+      --accent: #dd9a63;
+      --accent-ink: #241a10;
+      --accent-soft: #3c2e21;
+      --line: #3a332a;
+      --focus: #6fa89d;
+      --danger: #e0836a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [lang] { display: none; }
+  :root[data-lang="en"] [lang="en"] { display: inline; }
+  :root[data-lang="en"] span[lang="en"],
+  :root[data-lang="en"] li[lang="en"],
+  :root[data-lang="en"] p[lang="en"] { display: block; }
+  :root[data-lang="en"] label[lang="en"] { display: inline-flex; }
+  :root[data-lang="pl"] [lang="pl"] { display: inline; }
+  :root[data-lang="pl"] span[lang="pl"],
+  :root[data-lang="pl"] li[lang="pl"],
+  :root[data-lang="pl"] p[lang="pl"] { display: block; }
+  :root[data-lang="pl"] label[lang="pl"] { display: inline-flex; }
+  li[lang] { display: none; list-style: none; }
+  :root[data-lang="en"] li[lang="en"] { display: list-item; }
+  :root[data-lang="pl"] li[lang="pl"] { display: list-item; }
+
+  a { color: var(--accent); }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -999px;
+  }
+  .skip-link:focus {
+    left: 1rem;
+    top: 1rem;
+    background: var(--surface);
+    padding: 0.5rem 1rem;
+    z-index: 100;
+  }
+
+  header.site {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+  }
+  .brand svg { width: 28px; height: 28px; flex: none; }
+
+  nav.primary {
+    display: flex;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+  }
+  nav.primary a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  nav.primary a:hover, nav.primary a:focus-visible { color: var(--accent); }
+
+  .lang-toggle {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    flex: none;
+  }
+  .lang-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+  }
+  .lang-toggle button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .lang-toggle button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+
+  main { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.3fr 0.9fr;
+    gap: 2.5rem;
+    align-items: center;
+    padding: 3.5rem 0 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    margin: 0 0 0.8rem;
+  }
+  .hero h1 { font-size: 2.6rem; line-height: 1.08; margin-bottom: 0.9rem; }
+  .hero p.lede { color: var(--ink-soft); max-width: 46ch; }
+
+  .cat-art { width: 100%; max-width: 300px; justify-self: center; }
+  .cat-art figure { margin: 0; }
+  .cat-art img {
+    width: 100%;
+    height: 340px;
+    object-fit: cover;
+    object-position: center 30%;
+    border-radius: 10px;
+    display: block;
+    box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--ink) 45%, transparent);
+  }
+  .cat-art figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .cat-art figcaption a { color: var(--ink-soft); text-decoration: underline; }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin: 2rem 0 3rem;
+  }
+  .facts dl {
+    background: var(--surface);
+    margin: 0;
+    padding: 1rem 1.1rem;
+  }
+  .facts dt {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 0.35rem;
+  }
+  .facts dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92rem;
+  }
+
+  section.category {
+    padding: 2.6rem 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1.8rem;
+  }
+  section.category:last-of-type { border-bottom: none; }
+
+  .cat-tag {
+    color: var(--accent);
+    border: 1px solid var(--accent-soft);
+    background: var(--accent-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.4rem;
+    width: 2.4rem;
+    border-radius: 50%;
+  }
+  .cat-tag svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: currentColor;
+  }
+
+  section.category h2 { font-size: 1.5rem; margin-bottom: 0.3rem; }
+
+  .cat-body ul {
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.65rem;
+  }
+  .cat-body li {
+    padding-left: 1.1rem;
+    position: relative;
+    color: var(--ink);
+    max-width: 62ch;
+  }
+  .cat-body li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 5px;
+    height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .callout {
+    margin-top: 1.4rem;
+    padding: 1rem 1.2rem;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+  }
+  .callout p { margin: 0; font-size: 0.95rem; }
+  .callout a { font-weight: 600; }
+
+  section.contact {
+    padding: 3rem 0 4rem;
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 2.5rem;
+  }
+  section.contact h2 { font-size: 1.7rem; }
+
+  .contact-info p { color: var(--ink-soft); }
+  .contact-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+  .contact-info li {
+    position: relative;
+    padding-left: 1.1rem;
+    color: var(--ink-soft);
+  }
+  .contact-info li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 5px;
+    height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  form.contact-form {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.6rem;
+    display: grid;
+    gap: 1rem;
+  }
+  .field { display: grid; gap: 0.35rem; }
+  .field label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+  }
+  .field input, .field textarea {
+    font: inherit;
+    background: var(--ground);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.6rem 0.7rem;
+    color: var(--ink);
+  }
+  .field textarea { resize: vertical; min-height: 5.5rem; }
+  .field input:focus-visible, .field textarea:focus-visible, .checkbox-field input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .field .hint { font-size: 0.78rem; color: var(--ink-soft); font-style: italic; text-transform: none; letter-spacing: 0; }
+
+  .checkbox-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    background: var(--accent-soft);
+    padding: 0.75rem 0.9rem;
+    border-radius: 4px;
+  }
+  .checkbox-field input { margin-top: 0.2rem; }
+  .checkbox-field label { text-transform: none; letter-spacing: 0; font-size: 0.9rem; color: var(--ink); }
+
+  button.submit {
+    justify-self: start;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  button.submit:hover { filter: brightness(1.05); }
+  button.submit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .form-note { font-size: 0.78rem; color: var(--ink-soft); margin: 0; }
+
+  .hp-field { position: absolute; left: -9999px; top: -9999px; }
+
+  .form-status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
+  .form-status--success { color: var(--focus); }
+  .form-status--error { color: var(--danger); }
+
+  footer.site {
+    border-top: 1px solid var(--line);
+    padding: 1.6rem 1.5rem 2.4rem;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  footer.site p { color: var(--ink-soft); font-size: 0.82rem; max-width: 60ch; }
+
+  @media (max-width: 720px) {
+    .hero { grid-template-columns: 1fr; }
+    .cat-art { max-width: 170px; }
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    section.category { grid-template-columns: 1fr; }
+    section.contact { grid-template-columns: 1fr; }
+    nav.primary { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+  <symbol id="icon-paw" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="16.5" rx="6.2" ry="5.3"/>
+    <ellipse cx="4.8" cy="9.2" rx="2.3" ry="2.9" transform="rotate(-18 4.8 9.2)"/>
+    <ellipse cx="9.6" cy="5.3" rx="2.1" ry="2.7" transform="rotate(-8 9.6 5.3)"/>
+    <ellipse cx="14.4" cy="5.3" rx="2.1" ry="2.7" transform="rotate(8 14.4 5.3)"/>
+    <ellipse cx="19.2" cy="9.2" rx="2.3" ry="2.9" transform="rotate(18 19.2 9.2)"/>
+  </symbol>
+</svg>
+
+<header class="site">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M8 30 C8 18 12 10 20 10 C28 10 32 18 32 30" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <path d="M13 12 L9 4 L18 10 Z" fill="var(--accent)"/>
+      <path d="M27 12 L31 4 L22 10 Z" fill="var(--accent)"/>
+      <circle cx="16" cy="21" r="1.4" fill="var(--accent)"/>
+      <circle cx="24" cy="21" r="1.4" fill="var(--accent)"/>
+    </svg>
+    <span>
+      <span lang="en">Canadian Sphynx Guide</span>
+      <span lang="pl">Przewodnik po Sfinksie</span>
+    </span>
+  </div>
+  <nav class="primary">
+    <a href="#characteristics"><span lang="en">Characteristics</span><span lang="pl">Charakterystyka</span></a>
+    <a href="#temperament"><span lang="en">Temperament</span><span lang="pl">Temperament</span></a>
+    <a href="#diet"><span lang="en">Diet</span><span lang="pl">Dieta</span></a>
+    <a href="#behaviour"><span lang="en">Behaviour</span><span lang="pl">Zachowanie</span></a>
+    <a href="#contact"><span lang="en">Contact</span><span lang="pl">Kontakt</span></a>
+  </nav>
+  <div class="lang-toggle" role="group" aria-label="Language / Język">
+    <button id="btn-en" type="button" aria-pressed="true">EN</button>
+    <button id="btn-pl" type="button" aria-pressed="false">PL</button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">
+        <span lang="en">Owner's Guide</span>
+        <span lang="pl">Przewodnik dla Właścicieli</span>
+      </p>
+      <h1>
+        <span lang="en">Canadian Sphynx</span>
+        <span lang="pl">Sfinks Kanadyjski</span>
+      </h1>
+      <p class="lede" lang="en">The Canadian Sphynx is a hairless, wrinkled, and famously affectionate breed — bred not for looks alone, but for a temperament that borders on canine. This guide covers what every owner needs to know: build, behaviour, feeding, and when to call in a specialist.</p>
+      <p class="lede" lang="pl">Sfinks kanadyjski to bezwłosa, pomarszczona i niezwykle uczuciowa rasa — wyhodowana nie tylko dla wyglądu, ale i dla temperamentu bliskiego psiemu. Ten przewodnik zawiera wszystko, co powinien wiedzieć każdy opiekun: budowę ciała, zachowanie, żywienie oraz sytuacje wymagające konsultacji specjalisty.</p>
+    </div>
+    <div class="cat-art">
+      <figure>
+        <img
+          src="images/sphynx-cat.jpg"
+          alt="Canadian Sphynx cat, hairless with wrinkled skin and large ears"
+          loading="lazy" width="500" height="658">
+        <figcaption>
+          <span lang="en">Photo: Dmitry Makeev, <a href="https://commons.wikimedia.org/wiki/File:Chat_Sphynx.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, CC BY-SA 4.0</span>
+          <span lang="pl">Zdjęcie: Dmitry Makeev, <a href="https://commons.wikimedia.org/wiki/File:Chat_Sphynx.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, CC BY-SA 4.0</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <div class="facts">
+    <dl>
+      <dt><span lang="en">Origin</span><span lang="pl">Pochodzenie</span></dt>
+      <dd><span lang="en">Toronto, Canada · 1966</span><span lang="pl">Toronto, Kanada · 1966</span></dd>
+    </dl>
+    <dl>
+      <dt><span lang="en">Weight</span><span lang="pl">Waga</span></dt>
+      <dd>3.5–6 kg (8–12 lb)</dd>
+    </dl>
+    <dl>
+      <dt><span lang="en">Lifespan</span><span lang="pl">Długość życia</span></dt>
+      <dd><span lang="en">9–15 years</span><span lang="pl">9–15 lat</span></dd>
+    </dl>
+    <dl>
+      <dt><span lang="en">Coat</span><span lang="pl">Sierść</span></dt>
+      <dd><span lang="en">Hairless, suede-like</span><span lang="pl">Bezwłosa, jak zamsz</span></dd>
+    </dl>
+  </div>
+
+  <section class="category" id="characteristics">
+    <div class="cat-tag"><svg aria-hidden="true"><use href="#icon-paw"></use></svg></div>
+    <div class="cat-body">
+      <h2>
+        <span lang="en">Characteristics</span>
+        <span lang="pl">Charakterystyka</span>
+      </h2>
+      <ul>
+        <li lang="en">Hairless or covered in fine down ("peach fuzz"); skin ranges from pink to grey to black, following the same colour and pattern genetics as furred cats.</li>
+        <li lang="pl">Bezwłosa lub pokryta cienkim meszkiem ("brzoskwinka"); skóra bywa różowa, szara lub czarna — zgodnie z tą samą genetyką umaszczenia co u kotów z futrem.</li>
+        <li lang="en">Deeply wrinkled skin, especially around the muzzle, shoulders, and legs.</li>
+        <li lang="pl">Głęboko pomarszczona skóra, szczególnie w okolicach pyszczka, barków i łap.</li>
+        <li lang="en">Large, wide-set ears and lemon-shaped eyes give the breed its distinctive, alien-like look.</li>
+        <li lang="pl">Duże, szeroko osadzone uszy oraz oczy w kształcie cytryny nadają rasie charakterystyczny, "kosmiczny" wygląd.</li>
+        <li lang="en">Muscular, potbellied body with a barrel chest — surprisingly heavy for its size.</li>
+        <li lang="pl">Umięśnione, beczkowate ciało z szeroką klatką piersiową — kot jest zaskakująco ciężki jak na swój rozmiar.</li>
+        <li lang="en">Body temperature runs about 2°C higher than furred breeds, so they constantly seek out warmth.</li>
+        <li lang="pl">Temperatura ciała jest o około 2°C wyższa niż u kotów z futrem, dlatego sfinksy nieustannie szukają ciepła.</li>
+        <li lang="en">Little to no shedding, but the skin produces natural oils that need regular bathing.</li>
+        <li lang="pl">Praktycznie nie linieją, ale skóra wydziela naturalny łój, co wymaga regularnych kąpieli.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="category" id="temperament">
+    <div class="cat-tag"><svg aria-hidden="true"><use href="#icon-paw"></use></svg></div>
+    <div class="cat-body">
+      <h2>
+        <span lang="en">Temperament</span>
+        <span lang="pl">Temperament</span>
+      </h2>
+      <ul>
+        <li lang="en">Extroverted and people-oriented — often called "Velcro cats" for how closely they follow their owners.</li>
+        <li lang="pl">Ekstrawertyczne i silnie związane z ludźmi — bywają nazywane "kotami na rzepie" za to, jak wiernie podążają za opiekunem.</li>
+        <li lang="en">Highly intelligent and food-motivated; many learn to open doors and drawers.</li>
+        <li lang="pl">Bardzo inteligentne i zmotywowane jedzeniem; wiele z nich uczy się otwierać drzwi i szuflady.</li>
+        <li lang="en">Playful and acrobatic well into adulthood; loves climbing to the highest point in a room.</li>
+        <li lang="pl">Zabawowe i akrobatyczne nawet w dorosłości; uwielbiają wspinać się na najwyższy punkt w pomieszczeniu.</li>
+        <li lang="en">Craves physical warmth and contact — laps, shoulders, and shared blankets are favourite spots.</li>
+        <li lang="pl">Potrzebują fizycznego ciepła i kontaktu — kolana, ramiona i wspólny koc to ulubione miejsca.</li>
+        <li lang="en">Generally sociable with children and dogs when introduced properly.</li>
+        <li lang="pl">Zazwyczaj przyjazne wobec dzieci i psów, gdy są prawidłowo wprowadzane.</li>
+        <li lang="en">Vocal and communicative, especially when seeking attention or company.</li>
+        <li lang="pl">Głośne i komunikatywne, zwłaszcza gdy szukają uwagi lub towarzystwa.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="category" id="diet">
+    <div class="cat-tag"><svg aria-hidden="true"><use href="#icon-paw"></use></svg></div>
+    <div class="cat-body">
+      <h2>
+        <span lang="en">Diet</span>
+        <span lang="pl">Dieta</span>
+      </h2>
+      <ul>
+        <li lang="en">A fast metabolism that helps generate body heat means higher calorie needs than most breeds.</li>
+        <li lang="pl">Szybki metabolizm, pomagający wytwarzać ciepło ciała, oznacza wyższe zapotrzebowanie kaloryczne niż u większości ras.</li>
+        <li lang="en">Prioritise high-quality animal protein; look for taurine-rich formulas that support heart health.</li>
+        <li lang="pl">Priorytetem powinno być wysokiej jakości białko zwierzęce; warto wybierać karmy bogate w taurynę wspierającą pracę serca.</li>
+        <li lang="en">Small, frequent meals suit their appetite better than one or two large portions.</li>
+        <li lang="pl">Małe, częste posiłki lepiej odpowiadają ich apetytowi niż jedna lub dwie duże porcje.</li>
+        <li lang="en">Fresh water should always be available; wet food helps with hydration.</li>
+        <li lang="pl">Świeża woda powinna być dostępna zawsze; mokra karma pomaga w nawodnieniu.</li>
+        <li lang="en">Keep toxic foods out of reach: chocolate, onion, garlic, grapes, and xylitol.</li>
+        <li lang="pl">Produkty toksyczne trzymaj poza zasięgiem: czekolada, cebula, czosnek, winogrona i ksylitol.</li>
+        <li lang="en">Discuss weight and heart screening (for HCM) with a vet when planning a long-term diet.</li>
+        <li lang="pl">Kwestie wagi i badań kardiologicznych (w kierunku HCM) warto omówić z weterynarzem przy planowaniu długoterminowej diety.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="category" id="behaviour">
+    <div class="cat-tag"><svg aria-hidden="true"><use href="#icon-paw"></use></svg></div>
+    <div class="cat-body">
+      <h2>
+        <span lang="en">Behaviour Issues</span>
+        <span lang="pl">Problemy Behawioralne</span>
+      </h2>
+      <ul>
+        <li lang="en">Separation anxiety: excessive vocalising, pacing, or destructive behaviour when left alone for long periods.</li>
+        <li lang="pl">Lęk separacyjny: nadmierne miauczenie, chodzenie w kółko lub zachowania destrukcyjne przy dłuższym pozostawieniu samego kota.</li>
+        <li lang="en">Overgrooming: stress or skin sensitivity can lead to licking that irritates the skin.</li>
+        <li lang="pl">Nadmierna pielęgnacja: stres lub wrażliwość skóry mogą prowadzić do wylizywania podrażniającego skórę.</li>
+        <li lang="en">Attention-seeking mischief: knocking objects over or interrupting activities when under-stimulated.</li>
+        <li lang="pl">Psoty na tle szukania uwagi: strącanie przedmiotów lub przerywanie czynności domowników przy niedostatecznej stymulacji.</li>
+        <li lang="en">Food obsession: fast metabolism can present as constant "begging" or counter-surfing.</li>
+        <li lang="pl">Obsesja na punkcie jedzenia: szybki metabolizm może objawiać się ciągłym "wyżebrywaniem" jedzenia lub buszowaniem po blatach.</li>
+        <li lang="en">Cold-triggered hiding: a chilled Sphynx may become withdrawn, tense, or unusually irritable.</li>
+        <li lang="pl">Chowanie się przy chłodzie: zziębnięty sfinks może stać się wycofany, spięty lub niezwykle drażliwy.</li>
+        <li lang="en">Litter box aversion linked to stress in multi-cat households.</li>
+        <li lang="pl">Unikanie kuwety związane ze stresem w domach z wieloma kotami.</li>
+      </ul>
+      <div class="callout">
+        <p lang="en">If any of these become persistent or intense, a certified feline behaviourist can help identify the root cause and build a plan — <a href="#contact">see Contact Us below</a>.</p>
+        <p lang="pl">Jeśli któreś z tych zachowań się utrzymuje lub nasila, certyfikowany behawiorysta kotów może pomóc ustalić przyczynę i opracować plan działania — <a href="#contact">zobacz sekcję Kontakt poniżej</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div class="contact-info">
+      <h2>
+        <span lang="en">Contact Us</span>
+        <span lang="pl">Kontakt</span>
+      </h2>
+      <p lang="en">Looking for a behaviourist consultation for your Sphynx? Send us a message about your cat's characteristics, temperament, diet, or any behaviour concerns.</p>
+      <p lang="pl">Szukasz konsultacji behawiorysty dla swojego sfinksa? Napisz do nas o cechach, temperamencie, diecie lub niepokojących zachowaniach Twojego kota.</p>
+      <p lang="en">For example:</p>
+      <p lang="pl">Na przykład:</p>
+      <ul>
+        <li lang="en">Persistent anxiety, overgrooming, or aggression</li>
+        <li lang="pl">Utrzymujący się lęk, nadmierna pielęgnacja lub agresja</li>
+        <li lang="en">Litter box or multi-cat household issues</li>
+        <li lang="pl">Problemy z kuwetą lub w domu z wieloma kotami</li>
+        <li lang="en">General questions about care, diet, or temperament</li>
+        <li lang="pl">Ogólne pytania dotyczące opieki, diety lub temperamentu</li>
+      </ul>
+    </div>
+
+    <form class="contact-form" id="contact-form">
+      <div class="hp-field" aria-hidden="true">
+        <label for="website">Leave this field blank</label>
+        <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="name">
+          <span lang="en">Name</span>
+          <span lang="pl">Imię i nazwisko</span>
+        </label>
+        <input id="name" name="name" type="text" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="email">
+          <span lang="en">Email</span>
+          <span lang="pl">Adres e-mail</span>
+        </label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">
+          <span lang="en">Phone (optional)</span>
+          <span lang="pl">Telefon (opcjonalnie)</span>
+        </label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel">
+        <span class="hint">
+          <span lang="en">Leave a number only if you'd like a callback.</span>
+          <span lang="pl">Zostaw numer tylko, jeśli chcesz otrzymać telefon zwrotny.</span>
+        </span>
+      </div>
+      <div class="checkbox-field">
+        <input id="behaviourist" name="behaviourist" type="checkbox" value="yes">
+        <label for="behaviourist">
+          <span lang="en">I'm seeking a behaviourist consultation for my cat</span>
+          <span lang="pl">Szukam konsultacji behawiorysty dla mojego kota</span>
+        </label>
+      </div>
+      <div class="field">
+        <label for="message">
+          <span lang="en">Message</span>
+          <span lang="pl">Wiadomość</span>
+        </label>
+        <textarea id="message" name="message" required></textarea>
+      </div>
+      <button class="submit" type="submit">
+        <span lang="en">Send Message</span>
+        <span lang="pl">Wyślij wiadomość</span>
+      </button>
+      <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      <p class="form-note">
+        <span lang="en">We typically reply within 2 business days.</span>
+        <span lang="pl">Zazwyczaj odpowiadamy w ciągu 2 dni roboczych.</span>
+      </p>
+    </form>
+  </section>
+</main>
+
+<footer class="site">
+  <p lang="en">This page provides general information and is not a substitute for veterinary or professional behavioural advice.</p>
+  <p lang="pl">Ta strona zawiera ogólne informacje i nie zastępuje porady weterynaryjnej ani profesjonalnej porady behawioralnej.</p>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btnEn = document.getElementById('btn-en');
+    var btnPl = document.getElementById('btn-pl');
+
+    function setLang(lang) {
+      root.setAttribute('data-lang', lang);
+      btnEn.setAttribute('aria-pressed', String(lang === 'en'));
+      btnPl.setAttribute('aria-pressed', String(lang === 'pl'));
+    }
+
+    btnEn.addEventListener('click', function () { setLang('en'); });
+    btnPl.addEventListener('click', function () { setLang('pl'); });
+
+    setLang('en');
+  })();
+
+  (function () {
+    var form = document.getElementById('contact-form');
+    var status = document.getElementById('form-status');
+    var submitBtn = form.querySelector('button[type="submit"]');
+
+    var MESSAGES = {
+      en: {
+        sending: 'Sending…',
+        success: "Thank you — your message has been sent. We'll get back to you soon.",
+        error: 'Something went wrong. Please try again in a moment.'
+      },
+      pl: {
+        sending: 'Wysyłanie…',
+        success: 'Dziękujemy — wiadomość została wysłana. Odpowiemy najszybciej, jak to możliwe.',
+        error: 'Coś poszło nie tak. Spróbuj ponownie za chwilę.'
+      }
+    };
+
+    function currentLang() {
+      return document.documentElement.getAttribute('data-lang') === 'pl' ? 'pl' : 'en';
+    }
+
+    function setStatus(text, kind) {
+      status.textContent = text;
+      status.className = 'form-status' + (kind ? ' form-status--' + kind : '');
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var msgs = MESSAGES[currentLang()];
+      var data = new FormData(form);
+      var payload = {
+        name: data.get('name'),
+        email: data.get('email'),
+        phone: data.get('phone'),
+        behaviourist: data.get('behaviourist') === 'yes',
+        message: data.get('message'),
+        website: data.get('website')
+      };
+
+      submitBtn.disabled = true;
+      setStatus(msgs.sending);
+
+      fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            return { httpOk: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          submitBtn.disabled = false;
+          if (result.httpOk && result.data.ok) {
+            setStatus(msgs.success, 'success');
+            form.reset();
+          } else {
+            setStatus((result.data && result.data.error) || msgs.error, 'error');
+          }
+        })
+        .catch(function () {
+          submitBtn.disabled = false;
+          setStatus(msgs.error, 'error');
+        });
+    });
+  })();
+</script>
