@@ -14,7 +14,8 @@
       "Bash(pkill -f \"node server.js\")",
       "Bash(curl -s -X POST http://localhost:3100/api/contact -H \"Content-Type: application/json\" -d '{\"name\":\"A\",\"email\":\"a@example.com\",\"message\":\"hi\"}')",
       "Bash(node server.js)",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(notepad.exe \"C:\\\\Users\\\\BC134229\\\\OneDrive - Barry Callebaut\\\\Desktop\\\\experyment_1\\\\server\\\\.env\")"
     ]
   }
 }

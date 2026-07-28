@@ -5,15 +5,19 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const nodemailer = require('nodemailer');
+const { createClient } = require('@supabase/supabase-js');
 
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.join(__dirname, '..');
 
-const REQUIRED_ENV = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'CONTACT_TO'];
+const REQUIRED_ENV = [
+  'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'CONTACT_TO',
+  'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
+];
 const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missingEnv.length) {
   console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
-  console.error('Copy server/.env.example to server/.env and fill in your SMTP details.');
+  console.error('Copy server/.env.example to server/.env and fill in your SMTP and Supabase details.');
   process.exit(1);
 }
 
@@ -25,6 +29,12 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+});
+
+// Service-role key — full table access, bypasses Row Level Security. Only
+// ever used here, server-side. Never send this key to the browser.
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false },
 });
 
 const app = express();
@@ -72,6 +82,21 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
   }
   if (!EMAIL_RE.test(email)) {
     return res.status(400).json({ ok: false, error: 'Please provide a valid email address.' });
+  }
+
+  const record = {
+    name,
+    email,
+    phone: phone || null,
+    behaviourist,
+    message,
+  };
+
+  try {
+    const { error: dbError } = await supabase.from('contact_submissions').insert(record);
+    if (dbError) console.error('Failed to save submission to Supabase:', dbError.message);
+  } catch (dbErr) {
+    console.error('Supabase insert threw:', dbErr.message);
   }
 
   const lines = [
