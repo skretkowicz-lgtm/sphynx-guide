@@ -191,6 +191,8 @@
   [data-mode="signin"] #signup-title { display: none; }
   [data-mode="signup"] #toggle-to-signup { display: none; }
   [data-mode="signin"] #toggle-to-signin { display: none; }
+  [data-mode="signup"] #submit-signin { display: none; }
+  [data-mode="signin"] #submit-signup { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
@@ -290,51 +292,27 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/site.js"></script>
 <script>
-  (function () {
-    var root = document.documentElement;
-    var btnEn = document.getElementById('btn-en');
-    var btnPl = document.getElementById('btn-pl');
-
-    function setLang(lang) {
-      root.setAttribute('data-lang', lang);
-      btnEn.setAttribute('aria-pressed', String(lang === 'en'));
-      btnPl.setAttribute('aria-pressed', String(lang === 'pl'));
-    }
-
-    btnEn.addEventListener('click', function () { setLang('en'); });
-    btnPl.addEventListener('click', function () { setLang('pl'); });
-    setLang('en');
-  })();
-
   (function () {
     var card = document.getElementById('auth-card');
     var form = document.getElementById('auth-form');
     var status = document.getElementById('status');
     var submitBtn = document.getElementById('submit-btn');
-    var submitSignin = document.getElementById('submit-signin');
-    var submitSignup = document.getElementById('submit-signup');
 
     function isSignup() { return card.getAttribute('data-mode') === 'signup'; }
 
-    function setStatus(text, kind) {
-      status.textContent = text || '';
-      status.className = 'status' + (kind ? ' status--' + kind : '');
+    function setStatus(text, kind) { window.setStatus(status, text, kind); }
+
+    // Which submit label and which fields show is driven entirely by the
+    // [data-mode] CSS rules, so the mode lives in exactly one place.
+    function setMode(mode) {
+      card.setAttribute('data-mode', mode);
+      setStatus('');
     }
 
-    document.getElementById('btn-show-signup').addEventListener('click', function () {
-      card.setAttribute('data-mode', 'signup');
-      submitSignin.style.display = 'none';
-      submitSignup.style.display = '';
-      setStatus('');
-    });
-    document.getElementById('btn-show-signin').addEventListener('click', function () {
-      card.setAttribute('data-mode', 'signin');
-      submitSignin.style.display = '';
-      submitSignup.style.display = 'none';
-      setStatus('');
-    });
-    submitSignup.style.display = 'none';
+    document.getElementById('btn-show-signup').addEventListener('click', function () { setMode('signup'); });
+    document.getElementById('btn-show-signin').addEventListener('click', function () { setMode('signin'); });
 
     // If already signed in, skip the login page entirely.
     window.sb.auth.getSession().then(function (result) {
@@ -365,7 +343,7 @@
             return;
           }
           setStatus(
-            root.getAttribute('data-lang') === 'pl'
+            window.isPl()
               ? 'Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto, a następnie się zaloguj.'
               : 'Check your email to confirm your account, then sign in.',
             'success'

@@ -84,21 +84,6 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
     return res.status(400).json({ ok: false, error: 'Please provide a valid email address.' });
   }
 
-  const record = {
-    name,
-    email,
-    phone: phone || null,
-    behaviourist,
-    message,
-  };
-
-  try {
-    const { error: dbError } = await supabase.from('contact_submissions').insert(record);
-    if (dbError) console.error('Failed to save submission to Supabase:', dbError.message);
-  } catch (dbErr) {
-    console.error('Supabase insert threw:', dbErr.message);
-  }
-
   const lines = [
     `Name: ${name}`,
     `Email: ${email}`,
@@ -109,25 +94,44 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
     message,
   ].filter((line) => line !== null);
 
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: process.env.CONTACT_TO,
-      replyTo: `${name} <${email}>`,
-      subject: `Sphynx guide contact form — ${name}`,
-      text: lines.join('\n'),
+  // The insert and the email don't depend on each other, so run them
+  // concurrently rather than making the visitor wait for both in series.
+  // A DB failure is logged but never blocks the reply; only a mail failure
+  // is reported back, which matches how this behaved when it was serial.
+  const saved = supabase.from('contact_submissions')
+    .insert({ name, email, phone: phone || null, behaviourist, message })
+    .then(({ error }) => {
+      if (error) console.error('Failed to save submission to Supabase:', error.message);
+    }, (err) => {
+      console.error('Supabase insert threw:', err.message);
     });
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('Failed to send contact email:', err);
+
+  const mailed = transporter.sendMail({
+    from: process.env.SMTP_USER,
+    to: process.env.CONTACT_TO,
+    replyTo: `${name} <${email}>`,
+    subject: `Sphynx guide contact form — ${name}`,
+    text: lines.join('\n'),
+  });
+
+  const [, mailResult] = await Promise.all([saved, mailed.catch((err) => err)]);
+  if (mailResult instanceof Error) {
+    console.error('Failed to send contact email:', mailResult);
     return res.status(502).json({ ok: false, error: 'Could not send your message. Please try again later.' });
   }
+  return res.json({ ok: true });
 });
 
-// Keep server source and secrets out of the static file tree it serves.
-app.use('/server', (req, res) => res.status(404).end());
-
-app.use(express.static(PROJECT_ROOT, { dotfiles: 'deny', index: 'index.html' }));
+// Serve only what the site actually needs, rather than exposing the repo
+// root and carving exceptions out of it. Anything new at the root (sql/,
+// scripts/, notes) is private by default because it was never mounted.
+const staticOptions = { dotfiles: 'deny' };
+for (const page of ['index.html', 'login.html', 'profile.html']) {
+  app.get(`/${page}`, (req, res) => res.sendFile(path.join(PROJECT_ROOT, page)));
+}
+app.get('/', (req, res) => res.sendFile(path.join(PROJECT_ROOT, 'index.html')));
+app.use('/js', express.static(path.join(PROJECT_ROOT, 'js'), staticOptions));
+app.use('/images', express.static(path.join(PROJECT_ROOT, 'images'), staticOptions));
 
 app.use((err, req, res, next) => {
   if (err.type === 'entity.parse.failed') {
