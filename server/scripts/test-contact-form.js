@@ -13,9 +13,10 @@
 //
 // Valid cases send a REAL email through whatever SMTP account is
 // configured in .env. The server also rate-limits /api/contact to 5
-// requests per 10 minutes per IP, so a full --live run of all 13 cases
+// requests per 10 minutes per IP, so a full --live run of every case
 // will show 429s after the 5th request — that's the rate limiter working
-// as intended, not a bug in the test.
+// as intended, not a bug in the test. Use --limit or --only to stay under
+// the cap, or space runs 10 minutes apart.
 
 const allCases = require('../test-data/contact-submissions');
 
@@ -71,9 +72,11 @@ async function runCase(testCase) {
   console.log(`Cases: ${cases.length} of ${allCases.length}`);
   console.log('---');
 
-  for (const testCase of cases) {
+  for (let i = 0; i < cases.length; i += 1) {
+    const testCase = cases[i];
     console.log(`\n${testCase.label} — ${testCase.description}`);
     await runCase(testCase);
-    if (LIVE) await sleep(DELAY_MS);
+    // Pace requests, but don't idle after the last one.
+    if (LIVE && i < cases.length - 1) await sleep(DELAY_MS);
   }
 })();

@@ -102,6 +102,9 @@ create policy "consultations_insert_behaviourist_only" on public.consultations f
 create table public.documents (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id),
+  -- Nothing writes consultation_id yet — the upload UI attaches documents
+  -- to an owner, not to a specific session. The column and its policy
+  -- clause below are here so attaching one later needs no migration.
   consultation_id uuid references public.consultations(id),
   uploaded_by uuid not null references public.profiles(id),
   storage_path text not null unique,

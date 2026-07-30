@@ -103,7 +103,6 @@
   #app[data-mode="loading"] .view { display: none; }
   #app[data-mode="owner"] .behaviourist-only { display: none; }
   #app[data-mode="behaviourist"] .owner-only { display: none; }
-  #app:not([data-mode="loading"]) #loading { display: none; }
 
   .eyebrow {
     font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase;
@@ -256,9 +255,8 @@
       <section class="panel">
         <h2><span lang="en">Select a Client</span><span lang="pl">Wybierz Klienta</span></h2>
         <select class="client-picker" id="client-picker">
-          <option value="">
-            <span lang="en">— choose a client —</span>
-          </option>
+          <option value="" lang="en">— choose a client —</option>
+          <option value="" lang="pl">— wybierz klienta —</option>
         </select>
       </section>
 
@@ -318,25 +316,17 @@
           <span lang="en">File</span>
           <span lang="pl">Plik</span>
         </label>
-        <input type="file" class="upload-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.mp4,.mov" required>
+        <!-- accept + options are generated in buildUploadForm from the
+             ALLOWED_FILE_TYPES / CATEGORY_LABELS tables, so the lists live
+             in one place each. -->
+        <input type="file" class="upload-file" required>
       </div>
       <div class="field">
         <label>
           <span lang="en">Category</span>
           <span lang="pl">Kategoria</span>
         </label>
-        <select class="upload-category">
-          <option value="behaviourist_advice" lang="en">Behaviourist advice</option>
-          <option value="behaviourist_advice" lang="pl">Porada behawiorysty</option>
-          <option value="medical" lang="en">Medical documentation</option>
-          <option value="medical" lang="pl">Dokumentacja medyczna</option>
-          <option value="recording" lang="en">Recording</option>
-          <option value="recording" lang="pl">Nagranie</option>
-          <option value="image" lang="en">Image</option>
-          <option value="image" lang="pl">Zdjęcie</option>
-          <option value="other" lang="en">Other</option>
-          <option value="other" lang="pl">Inne</option>
-        </select>
+        <select class="upload-category"></select>
       </div>
     </div>
     <button class="submit" type="submit">
@@ -349,61 +339,31 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/site.js"></script>
 <script>
-  (function () {
-    var root = document.documentElement;
-    var btnEn = document.getElementById('btn-en');
-    var btnPl = document.getElementById('btn-pl');
-
-    function setLang(lang) {
-      root.setAttribute('data-lang', lang);
-      btnEn.setAttribute('aria-pressed', String(lang === 'en'));
-      btnPl.setAttribute('aria-pressed', String(lang === 'pl'));
-    }
-
-    btnEn.addEventListener('click', function () { setLang('en'); });
-    btnPl.addEventListener('click', function () { setLang('pl'); });
-    setLang('en');
-  })();
-
   (function () {
     var BUCKET = 'consultation-documents';
     var MAX_SIZE = 50 * 1024 * 1024;
-    var ALLOWED_TYPES = [
-      'application/pdf', 'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg', 'image/png', 'image/webp', 'image/heic',
-      'video/mp4', 'video/quicktime',
+
+    // One table drives both the client-side MIME check and the file
+    // picker's accept attribute, so the two can't drift apart. The
+    // authoritative limits are the bucket's own file_size_limit /
+    // allowed_mime_types in sql/002_… — these are UX only.
+    var ALLOWED_FILE_TYPES = [
+      { mime: 'application/pdf', ext: '.pdf' },
+      { mime: 'application/msword', ext: '.doc' },
+      { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', ext: '.docx' },
+      { mime: 'image/jpeg', ext: '.jpg,.jpeg' },
+      { mime: 'image/png', ext: '.png' },
+      { mime: 'image/webp', ext: '.webp' },
+      { mime: 'image/heic', ext: '.heic' },
+      { mime: 'video/mp4', ext: '.mp4' },
+      { mime: 'video/quicktime', ext: '.mov' },
     ];
+    var ALLOWED_MIMES = ALLOWED_FILE_TYPES.map(function (t) { return t.mime; });
+    var ACCEPT_ATTR = ALLOWED_FILE_TYPES.map(function (t) { return t.ext; }).join(',');
 
-    var app = document.getElementById('app');
-    var session = null;
-    var profile = null;
-
-    function esc(str) {
-      var div = document.createElement('div');
-      div.textContent = str == null ? '' : String(str);
-      return div.innerHTML;
-    }
-
-    function isPl() { return document.documentElement.getAttribute('data-lang') === 'pl'; }
-
-    function fmtDateTime(iso) {
-      try {
-        return new Date(iso).toLocaleString(isPl() ? 'pl-PL' : 'en-GB', {
-          dateStyle: 'medium', timeStyle: 'short',
-        });
-      } catch (e) {
-        return iso;
-      }
-    }
-
-    function modeLabel(mode) {
-      if (mode === 'online') return isPl() ? 'Online' : 'Online';
-      if (mode === 'in_person') return isPl() ? 'Stacjonarnie' : 'In person';
-      return mode;
-    }
-
+    // Keep in step with the category check constraint in sql/002_….
     var CATEGORY_LABELS = {
       behaviourist_advice: { en: 'Behaviourist advice', pl: 'Porada behawiorysty' },
       medical: { en: 'Medical documentation', pl: 'Dokumentacja medyczna' },
@@ -411,9 +371,40 @@
       image: { en: 'Image', pl: 'Zdjęcie' },
       other: { en: 'Other', pl: 'Inne' },
     };
-    function categoryLabel(cat) {
-      var entry = CATEGORY_LABELS[cat] || CATEGORY_LABELS.other;
-      return isPl() ? entry.pl : entry.en;
+    var MODE_LABELS = {
+      online: { en: 'Online', pl: 'Online' },
+      in_person: { en: 'In person', pl: 'Stacjonarnie' },
+    };
+
+    var app = document.getElementById('app');
+    var loadingEl = document.getElementById('loading');
+    var session = null;
+    var profile = null;
+    // Set by whichever view is active, so a language switch can re-render
+    // data-driven rows (dates, badges) that the CSS mechanism can't reach.
+    var rerender = null;
+
+    function esc(str) {
+      var div = document.createElement('div');
+      div.textContent = str == null ? '' : String(str);
+      return div.innerHTML;
+    }
+
+    function t(en, pl) { return window.isPl() ? pl : en; }
+
+    function labelFrom(table, key) {
+      var entry = table[key];
+      return entry ? t(entry.en, entry.pl) : key;
+    }
+
+    function fmtDateTime(iso) {
+      try {
+        return new Date(iso).toLocaleString(t('en-GB', 'pl-PL'), {
+          dateStyle: 'medium', timeStyle: 'short',
+        });
+      } catch (e) {
+        return iso;
+      }
     }
 
     function sanitizeFilename(name) {
@@ -422,16 +413,29 @@
 
     // ---- rendering ----
 
-    function renderConsultations(listEl, rows) {
+    function renderList(listEl, rows, emptyText, buildItem) {
       listEl.innerHTML = '';
       if (!rows.length) {
         var empty = document.createElement('li');
         empty.className = 'list-empty';
-        empty.textContent = isPl() ? 'Brak zapisanych konsultacji.' : 'No consultations logged yet.';
+        empty.textContent = emptyText;
         listEl.appendChild(empty);
         return;
       }
-      rows.forEach(function (row) {
+      rows.forEach(function (row) { listEl.appendChild(buildItem(row)); });
+    }
+
+    // A failed query must not look like an empty history.
+    function renderListError(listEl, message) {
+      listEl.innerHTML = '';
+      var li = document.createElement('li');
+      li.className = 'list-empty status--error';
+      li.textContent = t('Could not load this list: ', 'Nie udało się wczytać listy: ') + message;
+      listEl.appendChild(li);
+    }
+
+    function renderConsultations(listEl, rows) {
+      renderList(listEl, rows, t('No consultations logged yet.', 'Brak zapisanych konsultacji.'), function (row) {
         var li = document.createElement('li');
         li.className = 'consult-item';
         li.innerHTML =
@@ -439,46 +443,65 @@
             '<div class="when">' + esc(fmtDateTime(row.consultation_date)) + '</div>' +
             (row.notes ? '<div class="notes">' + esc(row.notes) + '</div>' : '') +
           '</div>' +
-          '<span class="badge">' + esc(modeLabel(row.mode)) + '</span>';
-        listEl.appendChild(li);
+          '<span class="badge">' + esc(labelFrom(MODE_LABELS, row.mode)) + '</span>';
+        return li;
       });
     }
 
     function renderDocuments(listEl, rows) {
-      listEl.innerHTML = '';
-      if (!rows.length) {
-        var empty = document.createElement('li');
-        empty.className = 'list-empty';
-        empty.textContent = isPl() ? 'Brak przesłanych dokumentów.' : 'No documents uploaded yet.';
-        listEl.appendChild(empty);
-        return;
-      }
-      rows.forEach(function (row) {
+      renderList(listEl, rows, t('No documents uploaded yet.', 'Brak przesłanych dokumentów.'), function (row) {
         var li = document.createElement('li');
         li.className = 'doc-item';
         var left = document.createElement('div');
         left.innerHTML =
           '<div class="file-name">' + esc(row.file_name) + '</div>' +
-          '<div class="meta">' + esc(categoryLabel(row.category)) + ' · ' + esc(fmtDateTime(row.created_at)) + '</div>';
+          '<div class="meta">' + esc(labelFrom(CATEGORY_LABELS, row.category)) +
+            ' · ' + esc(fmtDateTime(row.created_at)) + '</div>';
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'link-btn';
-        btn.textContent = isPl() ? 'Pobierz' : 'Download';
+        btn.textContent = t('Download', 'Pobierz');
         btn.addEventListener('click', function () { downloadDocument(row.storage_path); });
         li.appendChild(left);
         li.appendChild(btn);
-        listEl.appendChild(li);
+        return li;
       });
+    }
+
+    // ---- data ----
+
+    function loadList(table, orderCol, ownerId, listEl, render) {
+      return window.sb.from(table).select('*').eq('owner_id', ownerId)
+        .order(orderCol, { ascending: false })
+        .then(function (result) {
+          if (result.error) {
+            renderListError(listEl, result.error.message);
+            return;
+          }
+          render(listEl, result.data || []);
+        });
     }
 
     function downloadDocument(path) {
       window.sb.storage.from(BUCKET).createSignedUrl(path, 120).then(function (result) {
         if (result.error || !result.data) {
-          alert(isPl() ? 'Nie udało się pobrać pliku.' : 'Could not download the file.');
+          alert(t('Could not download the file.', 'Nie udało się pobrać pliku.'));
           return;
         }
         window.open(result.data.signedUrl, '_blank', 'noopener');
       });
+    }
+
+    function fillCategoryOptions(select) {
+      var previous = select.value;
+      select.innerHTML = '';
+      Object.keys(CATEGORY_LABELS).forEach(function (key) {
+        var opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = labelFrom(CATEGORY_LABELS, key);
+        select.appendChild(opt);
+      });
+      if (previous) select.value = previous;
     }
 
     function buildUploadForm(container, ownerId, onUploaded) {
@@ -491,21 +514,21 @@
       var statusEl = container.querySelector('.upload-status');
       var submitBtn = form.querySelector('button.submit');
 
+      fileInput.accept = ACCEPT_ATTR;
+      fillCategoryOptions(categorySelect);
+
       form.addEventListener('submit', function (event) {
         event.preventDefault();
         var file = fileInput.files[0];
-        statusEl.textContent = '';
-        statusEl.className = 'status upload-status';
+        window.setStatus(statusEl, '');
 
         if (!file) return;
         if (file.size > MAX_SIZE) {
-          statusEl.textContent = isPl() ? 'Plik jest zbyt duży (limit 50MB).' : 'File is too large (50MB limit).';
-          statusEl.className = 'status upload-status status--error';
+          window.setStatus(statusEl, t('File is too large (50MB limit).', 'Plik jest zbyt duży (limit 50MB).'), 'error');
           return;
         }
-        if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-          statusEl.textContent = isPl() ? 'Nieobsługiwany typ pliku.' : 'Unsupported file type.';
-          statusEl.className = 'status upload-status status--error';
+        if (ALLOWED_MIMES.indexOf(file.type) === -1) {
+          window.setStatus(statusEl, t('Unsupported file type.', 'Nieobsługiwany typ pliku.'), 'error');
           return;
         }
 
@@ -527,14 +550,13 @@
         }).then(function (insertResult) {
           submitBtn.disabled = false;
           if (insertResult.error) throw insertResult.error;
-          statusEl.textContent = isPl() ? 'Przesłano pomyślnie.' : 'Uploaded successfully.';
-          statusEl.className = 'status upload-status status--success';
+          window.setStatus(statusEl, t('Uploaded successfully.', 'Przesłano pomyślnie.'), 'success');
           form.reset();
+          fillCategoryOptions(categorySelect);
           onUploaded();
         }).catch(function (err) {
           submitBtn.disabled = false;
-          statusEl.textContent = (err && err.message) || (isPl() ? 'Nie udało się przesłać pliku.' : 'Upload failed.');
-          statusEl.className = 'status upload-status status--error';
+          window.setStatus(statusEl, (err && err.message) || t('Upload failed.', 'Nie udało się przesłać pliku.'), 'error');
         });
       });
     }
@@ -546,18 +568,18 @@
       var consultList = document.getElementById('owner-consultations');
       var docList = document.getElementById('owner-documents');
 
+      function refreshConsultations() {
+        return loadList('consultations', 'consultation_date', profile.id, consultList, renderConsultations);
+      }
       function refreshDocs() {
-        window.sb.from('documents').select('*').eq('owner_id', profile.id)
-          .order('created_at', { ascending: false })
-          .then(function (result) { renderDocuments(docList, result.data || []); });
+        return loadList('documents', 'created_at', profile.id, docList, renderDocuments);
       }
 
-      window.sb.from('consultations').select('*').eq('owner_id', profile.id)
-        .order('consultation_date', { ascending: false })
-        .then(function (result) { renderConsultations(consultList, result.data || []); });
-
+      refreshConsultations();
       refreshDocs();
       buildUploadForm(document.getElementById('owner-upload'), profile.id, refreshDocs);
+
+      rerender = function () { refreshConsultations(); refreshDocs(); };
     }
 
     // ---- behaviourist view ----
@@ -566,104 +588,116 @@
       app.setAttribute('data-mode', 'behaviourist');
       var picker = document.getElementById('client-picker');
       var detail = document.getElementById('client-detail');
+      var consultList = document.getElementById('beh-consultations');
+      var docList = document.getElementById('beh-documents');
+      var consultForm = document.getElementById('consultation-form');
+      var consultStatus = document.getElementById('consult-status');
+
+      function refreshConsultations() {
+        return loadList('consultations', 'consultation_date', picker.value, consultList, renderConsultations);
+      }
+      function refreshDocs() {
+        return loadList('documents', 'created_at', picker.value, docList, renderDocuments);
+      }
 
       window.sb.from('profiles').select('*').eq('role', 'owner').order('full_name').then(function (result) {
+        if (result.error) {
+          window.setStatus(consultStatus, t('Could not load the client list: ', 'Nie udało się wczytać listy klientów: ')
+            + result.error.message, 'error');
+          return;
+        }
         (result.data || []).forEach(function (client) {
           var opt = document.createElement('option');
           opt.value = client.id;
-          opt.textContent = (client.full_name || (isPl() ? '(bez nazwy)' : '(no name)')) + ' — ' + client.email;
+          opt.textContent = (client.full_name || t('(no name)', '(bez nazwy)')) + ' — ' + client.email;
           picker.appendChild(opt);
         });
       });
 
       picker.addEventListener('change', function () {
-        var clientId = picker.value;
-        if (!clientId) {
+        if (!picker.value) {
           detail.style.display = 'none';
           return;
         }
         detail.style.display = '';
-        loadClientDetail(clientId);
-      });
-
-      function loadClientDetail(clientId) {
-        var consultList = document.getElementById('beh-consultations');
-        var docList = document.getElementById('beh-documents');
-
-        function refreshConsultations() {
-          window.sb.from('consultations').select('*').eq('owner_id', clientId)
-            .order('consultation_date', { ascending: false })
-            .then(function (result) { renderConsultations(consultList, result.data || []); });
-        }
-        function refreshDocs() {
-          window.sb.from('documents').select('*').eq('owner_id', clientId)
-            .order('created_at', { ascending: false })
-            .then(function (result) { renderDocuments(docList, result.data || []); });
-        }
-
         refreshConsultations();
         refreshDocs();
-        buildUploadForm(document.getElementById('beh-upload'), clientId, refreshDocs);
+        buildUploadForm(document.getElementById('beh-upload'), picker.value, refreshDocs);
+      });
 
-        var form = document.getElementById('consultation-form');
-        var status = document.getElementById('consult-status');
-        var newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
+      // Bound once. The selected client is read from the picker at submit
+      // time, so the form node never has to be rebuilt to swap handlers.
+      consultForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var clientId = picker.value;
+        var dateVal = document.getElementById('consult-date').value;
+        if (!clientId || !dateVal) return;
 
-        newForm.addEventListener('submit', function (event) {
-          event.preventDefault();
-          var dateVal = document.getElementById('consult-date').value;
-          var mode = document.getElementById('consult-mode').value;
-          var notes = document.getElementById('consult-notes').value.trim();
-          var statusEl = document.getElementById('consult-status');
-          if (!dateVal) return;
-
-          window.sb.from('consultations').insert({
-            owner_id: clientId,
-            consultation_date: new Date(dateVal).toISOString(),
-            mode: mode,
-            notes: notes || null,
-            created_by: session.user.id,
-          }).then(function (result) {
-            if (result.error) {
-              statusEl.textContent = result.error.message;
-              statusEl.className = 'status status--error';
-              return;
-            }
-            statusEl.textContent = isPl() ? 'Zapisano konsultację.' : 'Consultation saved.';
-            statusEl.className = 'status status--success';
-            newForm.reset();
-            refreshConsultations();
-          });
+        window.sb.from('consultations').insert({
+          owner_id: clientId,
+          consultation_date: new Date(dateVal).toISOString(),
+          mode: document.getElementById('consult-mode').value,
+          notes: document.getElementById('consult-notes').value.trim() || null,
+          created_by: session.user.id,
+        }).then(function (result) {
+          if (result.error) {
+            window.setStatus(consultStatus, result.error.message, 'error');
+            return;
+          }
+          window.setStatus(consultStatus, t('Consultation saved.', 'Zapisano konsultację.'), 'success');
+          consultForm.reset();
+          refreshConsultations();
         });
-      }
+      });
+
+      rerender = function () {
+        if (picker.value) { refreshConsultations(); refreshDocs(); }
+      };
     }
 
     // ---- boot ----
+
+    window.onLangChange(function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.upload-category'), fillCategoryOptions);
+      if (rerender) rerender();
+    });
 
     document.getElementById('btn-logout').addEventListener('click', function () {
       window.sb.auth.signOut().then(function () { window.location.href = 'index.html'; });
     });
 
+    function showFatal(message) {
+      loadingEl.textContent = message;
+      loadingEl.className = 'status--error';
+      loadingEl.hidden = false;
+    }
+
     window.sb.auth.getSession().then(function (result) {
       session = result.data.session;
       if (!session) {
         window.location.href = 'login.html';
-        return;
+        return null;
       }
       return window.sb.from('profiles').select('*').eq('id', session.user.id).single();
     }).then(function (result) {
-      if (!result) return;
+      if (!result) return; // redirected to login
       if (result.error || !result.data) {
-        window.location.href = 'login.html';
+        // There *is* a session, so bouncing to login.html would only send
+        // us straight back here. Surface the failure instead.
+        showFatal(t('Could not load your profile. Please refresh to try again.',
+                    'Nie udało się wczytać profilu. Odśwież stronę, aby spróbować ponownie.'));
         return;
       }
       profile = result.data;
+      loadingEl.hidden = true;
       if (profile.role === 'behaviourist') {
         loadBehaviouristView();
       } else {
         loadOwnerView();
       }
+    }).catch(function (err) {
+      showFatal(t('Something went wrong loading this page: ', 'Wystąpił błąd podczas wczytywania strony: ')
+        + ((err && err.message) || ''));
     });
   })();
 </script>
