@@ -1,0 +1,669 @@
+<title>My Profile — Canadian Sphynx Guide / Mój Profil</title>
+<style>
+  :root {
+    --ground: #edeae4;
+    --surface: #faf8f5;
+    --ink: #221f1b;
+    --ink-soft: #6b6459;
+    --accent: #8a5a3b;
+    --accent-ink: #fbf7f2;
+    --accent-soft: #e6d5c3;
+    --line: #d9d2c6;
+    --focus: #3d6b63;
+    --danger: #a3432c;
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #1a1713;
+    --surface: #221e19;
+    --ink: #f1ece3;
+    --ink-soft: #b5aa9a;
+    --accent: #dd9a63;
+    --accent-ink: #241a10;
+    --accent-soft: #3c2e21;
+    --line: #3a332a;
+    --focus: #6fa89d;
+    --danger: #e0836a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1a1713;
+      --surface: #221e19;
+      --ink: #f1ece3;
+      --ink-soft: #b5aa9a;
+      --accent: #dd9a63;
+      --accent-ink: #241a10;
+      --accent-soft: #3c2e21;
+      --line: #3a332a;
+      --focus: #6fa89d;
+      --danger: #e0836a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [lang] { display: none; }
+  :root[data-lang="en"] [lang="en"] { display: inline; }
+  :root[data-lang="en"] span.block[lang="en"], :root[data-lang="en"] p[lang="en"], :root[data-lang="en"] option[lang="en"] { display: block; }
+  :root[data-lang="pl"] [lang="pl"] { display: inline; }
+  :root[data-lang="pl"] span.block[lang="pl"], :root[data-lang="pl"] p[lang="pl"], :root[data-lang="pl"] option[lang="pl"] { display: block; }
+
+  a { color: var(--accent); }
+  h1, h2 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; }
+
+  header.site {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-display); font-size: 1.05rem; }
+  .brand svg { width: 28px; height: 28px; flex: none; }
+  .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.6rem; }
+
+  .header-controls { display: flex; align-items: center; gap: 0.9rem; }
+
+  .lang-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; flex: none; }
+  .lang-toggle button {
+    border: none; background: transparent; color: var(--ink-soft);
+    font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em;
+    padding: 0.35rem 0.7rem; cursor: pointer;
+  }
+  .lang-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .lang-toggle button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+  button.link-btn {
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--ink-soft); font: inherit; font-size: 0.82rem;
+    padding: 0.4rem 0.9rem; cursor: pointer;
+  }
+  button.link-btn:hover { color: var(--ink); border-color: var(--accent); }
+  button.link-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  main { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  #loading { color: var(--ink-soft); padding: 3rem 0; text-align: center; }
+
+  #app[data-mode="loading"] .view { display: none; }
+  #app[data-mode="owner"] .behaviourist-only { display: none; }
+  #app[data-mode="behaviourist"] .owner-only { display: none; }
+  #app:not([data-mode="loading"]) #loading { display: none; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--accent); margin: 0 0 0.4rem;
+  }
+
+  section.panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  section.panel h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+
+  select.client-picker, .field select {
+    font: inherit;
+    background: var(--ground);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.6rem 0.7rem;
+    color: var(--ink);
+    width: 100%;
+  }
+
+  .list { display: grid; gap: 0.75rem; list-style: none; margin: 0; padding: 0; }
+  .list-empty { color: var(--ink-soft); font-size: 0.9rem; font-style: italic; }
+
+  .consult-item, .doc-item {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .consult-item .when { font-weight: 600; }
+  .consult-item .notes { color: var(--ink-soft); font-size: 0.9rem; margin-top: 0.3rem; }
+  .badge {
+    font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.04em; background: var(--accent-soft); color: var(--accent);
+    padding: 0.2rem 0.55rem; border-radius: 4px; flex: none; white-space: nowrap;
+  }
+
+  .doc-item .file-name { font-weight: 600; word-break: break-word; }
+  .doc-item .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
+  .doc-item button.link-btn { flex: none; }
+
+  form.stacked { display: grid; gap: 1rem; }
+  .field { display: grid; gap: 0.35rem; }
+  .field label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+  .field input, .field textarea {
+    font: inherit; background: var(--ground); border: 1px solid var(--line);
+    border-radius: 4px; padding: 0.6rem 0.7rem; color: var(--ink);
+  }
+  .field textarea { resize: vertical; min-height: 4rem; }
+  .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--focus); outline-offset: 1px;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  button.submit {
+    background: var(--accent); color: var(--accent-ink); border: none;
+    font: inherit; font-weight: 600; padding: 0.65rem 1.3rem;
+    border-radius: 999px; cursor: pointer; justify-self: start;
+  }
+  button.submit:hover { filter: brightness(1.05); }
+  button.submit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  button.submit:disabled { opacity: 0.6; cursor: default; }
+
+  .status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
+  .status--error { color: var(--danger); }
+  .status--success { color: var(--focus); }
+
+  @media (max-width: 640px) {
+    .field-row { grid-template-columns: 1fr; }
+    .consult-item, .doc-item { flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<header class="site">
+  <div class="brand">
+    <a href="index.html">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M8 30 C8 18 12 10 20 10 C28 10 32 18 32 30" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <path d="M13 12 L9 4 L18 10 Z" fill="var(--accent)"/>
+        <path d="M27 12 L31 4 L22 10 Z" fill="var(--accent)"/>
+        <circle cx="16" cy="21" r="1.4" fill="var(--accent)"/>
+        <circle cx="24" cy="21" r="1.4" fill="var(--accent)"/>
+      </svg>
+      <span>
+        <span lang="en">Canadian Sphynx Guide</span>
+        <span lang="pl">Przewodnik po Sfinksie</span>
+      </span>
+    </a>
+  </div>
+  <div class="header-controls">
+    <div class="lang-toggle" role="group" aria-label="Language / Język">
+      <button id="btn-en" type="button" aria-pressed="true">EN</button>
+      <button id="btn-pl" type="button" aria-pressed="false">PL</button>
+    </div>
+    <button class="link-btn" id="btn-logout" type="button">
+      <span lang="en">Log out</span>
+      <span lang="pl">Wyloguj</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <p id="loading">
+    <span lang="en">Loading your profile…</span>
+    <span lang="pl">Wczytywanie profilu…</span>
+  </p>
+
+  <div id="app" data-mode="loading">
+
+    <!-- Owner view -->
+    <div class="view owner-only">
+      <p class="eyebrow"><span lang="en">Your Profile</span><span lang="pl">Twój Profil</span></p>
+      <h1 style="margin-bottom: 1.5rem;">
+        <span lang="en">My Consultations &amp; Documents</span>
+        <span lang="pl">Moje Konsultacje i Dokumenty</span>
+      </h1>
+
+      <section class="panel">
+        <h2><span lang="en">Consultation History</span><span lang="pl">Historia Konsultacji</span></h2>
+        <ul class="list" id="owner-consultations"></ul>
+      </section>
+
+      <section class="panel">
+        <h2><span lang="en">Documents</span><span lang="pl">Dokumenty</span></h2>
+        <ul class="list" id="owner-documents" style="margin-bottom: 1.25rem;"></ul>
+        <div id="owner-upload"></div>
+      </section>
+    </div>
+
+    <!-- Behaviourist view -->
+    <div class="view behaviourist-only">
+      <p class="eyebrow"><span lang="en">Behaviourist Dashboard</span><span lang="pl">Panel Behawiorysty</span></p>
+      <h1 style="margin-bottom: 1.5rem;">
+        <span lang="en">Client Consultations &amp; Documents</span>
+        <span lang="pl">Konsultacje i Dokumenty Klientów</span>
+      </h1>
+
+      <section class="panel">
+        <h2><span lang="en">Select a Client</span><span lang="pl">Wybierz Klienta</span></h2>
+        <select class="client-picker" id="client-picker">
+          <option value="">
+            <span lang="en">— choose a client —</span>
+          </option>
+        </select>
+      </section>
+
+      <div id="client-detail" style="display:none;">
+        <section class="panel">
+          <h2><span lang="en">Consultation History</span><span lang="pl">Historia Konsultacji</span></h2>
+          <ul class="list" id="beh-consultations" style="margin-bottom: 1.25rem;"></ul>
+
+          <h2 style="font-size: 1rem; margin-bottom: 0.75rem;">
+            <span lang="en">Log a Consultation</span>
+            <span lang="pl">Zapisz Konsultację</span>
+          </h2>
+          <form class="stacked" id="consultation-form">
+            <div class="field-row">
+              <div class="field">
+                <label for="consult-date"><span lang="en">Date &amp; time</span><span lang="pl">Data i godzina</span></label>
+                <input type="datetime-local" id="consult-date" required>
+              </div>
+              <div class="field">
+                <label for="consult-mode"><span lang="en">Mode</span><span lang="pl">Forma</span></label>
+                <select id="consult-mode">
+                  <option value="online" lang="en">Online</option>
+                  <option value="online" lang="pl">Online</option>
+                  <option value="in_person" lang="en">In person</option>
+                  <option value="in_person" lang="pl">Stacjonarnie</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="consult-notes"><span lang="en">Notes (optional)</span><span lang="pl">Notatki (opcjonalnie)</span></label>
+              <textarea id="consult-notes"></textarea>
+            </div>
+            <button class="submit" type="submit">
+              <span lang="en">Save Consultation</span>
+              <span lang="pl">Zapisz Konsultację</span>
+            </button>
+            <p class="status" id="consult-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2><span lang="en">Documents</span><span lang="pl">Dokumenty</span></h2>
+          <ul class="list" id="beh-documents" style="margin-bottom: 1.25rem;"></ul>
+          <div id="beh-upload"></div>
+        </section>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<template id="upload-form-template">
+  <form class="stacked upload-form">
+    <div class="field-row">
+      <div class="field">
+        <label>
+          <span lang="en">File</span>
+          <span lang="pl">Plik</span>
+        </label>
+        <input type="file" class="upload-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.mp4,.mov" required>
+      </div>
+      <div class="field">
+        <label>
+          <span lang="en">Category</span>
+          <span lang="pl">Kategoria</span>
+        </label>
+        <select class="upload-category">
+          <option value="behaviourist_advice" lang="en">Behaviourist advice</option>
+          <option value="behaviourist_advice" lang="pl">Porada behawiorysty</option>
+          <option value="medical" lang="en">Medical documentation</option>
+          <option value="medical" lang="pl">Dokumentacja medyczna</option>
+          <option value="recording" lang="en">Recording</option>
+          <option value="recording" lang="pl">Nagranie</option>
+          <option value="image" lang="en">Image</option>
+          <option value="image" lang="pl">Zdjęcie</option>
+          <option value="other" lang="en">Other</option>
+          <option value="other" lang="pl">Inne</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit" type="submit">
+      <span lang="en">Upload</span>
+      <span lang="pl">Prześlij</span>
+    </button>
+    <p class="status upload-status" role="status" aria-live="polite"></p>
+  </form>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btnEn = document.getElementById('btn-en');
+    var btnPl = document.getElementById('btn-pl');
+
+    function setLang(lang) {
+      root.setAttribute('data-lang', lang);
+      btnEn.setAttribute('aria-pressed', String(lang === 'en'));
+      btnPl.setAttribute('aria-pressed', String(lang === 'pl'));
+    }
+
+    btnEn.addEventListener('click', function () { setLang('en'); });
+    btnPl.addEventListener('click', function () { setLang('pl'); });
+    setLang('en');
+  })();
+
+  (function () {
+    var BUCKET = 'consultation-documents';
+    var MAX_SIZE = 50 * 1024 * 1024;
+    var ALLOWED_TYPES = [
+      'application/pdf', 'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg', 'image/png', 'image/webp', 'image/heic',
+      'video/mp4', 'video/quicktime',
+    ];
+
+    var app = document.getElementById('app');
+    var session = null;
+    var profile = null;
+
+    function esc(str) {
+      var div = document.createElement('div');
+      div.textContent = str == null ? '' : String(str);
+      return div.innerHTML;
+    }
+
+    function isPl() { return document.documentElement.getAttribute('data-lang') === 'pl'; }
+
+    function fmtDateTime(iso) {
+      try {
+        return new Date(iso).toLocaleString(isPl() ? 'pl-PL' : 'en-GB', {
+          dateStyle: 'medium', timeStyle: 'short',
+        });
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    function modeLabel(mode) {
+      if (mode === 'online') return isPl() ? 'Online' : 'Online';
+      if (mode === 'in_person') return isPl() ? 'Stacjonarnie' : 'In person';
+      return mode;
+    }
+
+    var CATEGORY_LABELS = {
+      behaviourist_advice: { en: 'Behaviourist advice', pl: 'Porada behawiorysty' },
+      medical: { en: 'Medical documentation', pl: 'Dokumentacja medyczna' },
+      recording: { en: 'Recording', pl: 'Nagranie' },
+      image: { en: 'Image', pl: 'Zdjęcie' },
+      other: { en: 'Other', pl: 'Inne' },
+    };
+    function categoryLabel(cat) {
+      var entry = CATEGORY_LABELS[cat] || CATEGORY_LABELS.other;
+      return isPl() ? entry.pl : entry.en;
+    }
+
+    function sanitizeFilename(name) {
+      return String(name).replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-100);
+    }
+
+    // ---- rendering ----
+
+    function renderConsultations(listEl, rows) {
+      listEl.innerHTML = '';
+      if (!rows.length) {
+        var empty = document.createElement('li');
+        empty.className = 'list-empty';
+        empty.textContent = isPl() ? 'Brak zapisanych konsultacji.' : 'No consultations logged yet.';
+        listEl.appendChild(empty);
+        return;
+      }
+      rows.forEach(function (row) {
+        var li = document.createElement('li');
+        li.className = 'consult-item';
+        li.innerHTML =
+          '<div>' +
+            '<div class="when">' + esc(fmtDateTime(row.consultation_date)) + '</div>' +
+            (row.notes ? '<div class="notes">' + esc(row.notes) + '</div>' : '') +
+          '</div>' +
+          '<span class="badge">' + esc(modeLabel(row.mode)) + '</span>';
+        listEl.appendChild(li);
+      });
+    }
+
+    function renderDocuments(listEl, rows) {
+      listEl.innerHTML = '';
+      if (!rows.length) {
+        var empty = document.createElement('li');
+        empty.className = 'list-empty';
+        empty.textContent = isPl() ? 'Brak przesłanych dokumentów.' : 'No documents uploaded yet.';
+        listEl.appendChild(empty);
+        return;
+      }
+      rows.forEach(function (row) {
+        var li = document.createElement('li');
+        li.className = 'doc-item';
+        var left = document.createElement('div');
+        left.innerHTML =
+          '<div class="file-name">' + esc(row.file_name) + '</div>' +
+          '<div class="meta">' + esc(categoryLabel(row.category)) + ' · ' + esc(fmtDateTime(row.created_at)) + '</div>';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'link-btn';
+        btn.textContent = isPl() ? 'Pobierz' : 'Download';
+        btn.addEventListener('click', function () { downloadDocument(row.storage_path); });
+        li.appendChild(left);
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
+    }
+
+    function downloadDocument(path) {
+      window.sb.storage.from(BUCKET).createSignedUrl(path, 120).then(function (result) {
+        if (result.error || !result.data) {
+          alert(isPl() ? 'Nie udało się pobrać pliku.' : 'Could not download the file.');
+          return;
+        }
+        window.open(result.data.signedUrl, '_blank', 'noopener');
+      });
+    }
+
+    function buildUploadForm(container, ownerId, onUploaded) {
+      var template = document.getElementById('upload-form-template');
+      container.innerHTML = '';
+      container.appendChild(template.content.cloneNode(true));
+      var form = container.querySelector('.upload-form');
+      var fileInput = container.querySelector('.upload-file');
+      var categorySelect = container.querySelector('.upload-category');
+      var statusEl = container.querySelector('.upload-status');
+      var submitBtn = form.querySelector('button.submit');
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var file = fileInput.files[0];
+        statusEl.textContent = '';
+        statusEl.className = 'status upload-status';
+
+        if (!file) return;
+        if (file.size > MAX_SIZE) {
+          statusEl.textContent = isPl() ? 'Plik jest zbyt duży (limit 50MB).' : 'File is too large (50MB limit).';
+          statusEl.className = 'status upload-status status--error';
+          return;
+        }
+        if (ALLOWED_TYPES.indexOf(file.type) === -1) {
+          statusEl.textContent = isPl() ? 'Nieobsługiwany typ pliku.' : 'Unsupported file type.';
+          statusEl.className = 'status upload-status status--error';
+          return;
+        }
+
+        submitBtn.disabled = true;
+        var id = crypto.randomUUID();
+        var path = ownerId + '/' + id + '/' + sanitizeFilename(file.name);
+
+        window.sb.storage.from(BUCKET).upload(path, file, { contentType: file.type }).then(function (uploadResult) {
+          if (uploadResult.error) throw uploadResult.error;
+          return window.sb.from('documents').insert({
+            id: id,
+            owner_id: ownerId,
+            uploaded_by: session.user.id,
+            storage_path: path,
+            file_name: file.name,
+            mime_type: file.type,
+            category: categorySelect.value,
+          });
+        }).then(function (insertResult) {
+          submitBtn.disabled = false;
+          if (insertResult.error) throw insertResult.error;
+          statusEl.textContent = isPl() ? 'Przesłano pomyślnie.' : 'Uploaded successfully.';
+          statusEl.className = 'status upload-status status--success';
+          form.reset();
+          onUploaded();
+        }).catch(function (err) {
+          submitBtn.disabled = false;
+          statusEl.textContent = (err && err.message) || (isPl() ? 'Nie udało się przesłać pliku.' : 'Upload failed.');
+          statusEl.className = 'status upload-status status--error';
+        });
+      });
+    }
+
+    // ---- owner view ----
+
+    function loadOwnerView() {
+      app.setAttribute('data-mode', 'owner');
+      var consultList = document.getElementById('owner-consultations');
+      var docList = document.getElementById('owner-documents');
+
+      function refreshDocs() {
+        window.sb.from('documents').select('*').eq('owner_id', profile.id)
+          .order('created_at', { ascending: false })
+          .then(function (result) { renderDocuments(docList, result.data || []); });
+      }
+
+      window.sb.from('consultations').select('*').eq('owner_id', profile.id)
+        .order('consultation_date', { ascending: false })
+        .then(function (result) { renderConsultations(consultList, result.data || []); });
+
+      refreshDocs();
+      buildUploadForm(document.getElementById('owner-upload'), profile.id, refreshDocs);
+    }
+
+    // ---- behaviourist view ----
+
+    function loadBehaviouristView() {
+      app.setAttribute('data-mode', 'behaviourist');
+      var picker = document.getElementById('client-picker');
+      var detail = document.getElementById('client-detail');
+
+      window.sb.from('profiles').select('*').eq('role', 'owner').order('full_name').then(function (result) {
+        (result.data || []).forEach(function (client) {
+          var opt = document.createElement('option');
+          opt.value = client.id;
+          opt.textContent = (client.full_name || (isPl() ? '(bez nazwy)' : '(no name)')) + ' — ' + client.email;
+          picker.appendChild(opt);
+        });
+      });
+
+      picker.addEventListener('change', function () {
+        var clientId = picker.value;
+        if (!clientId) {
+          detail.style.display = 'none';
+          return;
+        }
+        detail.style.display = '';
+        loadClientDetail(clientId);
+      });
+
+      function loadClientDetail(clientId) {
+        var consultList = document.getElementById('beh-consultations');
+        var docList = document.getElementById('beh-documents');
+
+        function refreshConsultations() {
+          window.sb.from('consultations').select('*').eq('owner_id', clientId)
+            .order('consultation_date', { ascending: false })
+            .then(function (result) { renderConsultations(consultList, result.data || []); });
+        }
+        function refreshDocs() {
+          window.sb.from('documents').select('*').eq('owner_id', clientId)
+            .order('created_at', { ascending: false })
+            .then(function (result) { renderDocuments(docList, result.data || []); });
+        }
+
+        refreshConsultations();
+        refreshDocs();
+        buildUploadForm(document.getElementById('beh-upload'), clientId, refreshDocs);
+
+        var form = document.getElementById('consultation-form');
+        var status = document.getElementById('consult-status');
+        var newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        newForm.addEventListener('submit', function (event) {
+          event.preventDefault();
+          var dateVal = document.getElementById('consult-date').value;
+          var mode = document.getElementById('consult-mode').value;
+          var notes = document.getElementById('consult-notes').value.trim();
+          var statusEl = document.getElementById('consult-status');
+          if (!dateVal) return;
+
+          window.sb.from('consultations').insert({
+            owner_id: clientId,
+            consultation_date: new Date(dateVal).toISOString(),
+            mode: mode,
+            notes: notes || null,
+            created_by: session.user.id,
+          }).then(function (result) {
+            if (result.error) {
+              statusEl.textContent = result.error.message;
+              statusEl.className = 'status status--error';
+              return;
+            }
+            statusEl.textContent = isPl() ? 'Zapisano konsultację.' : 'Consultation saved.';
+            statusEl.className = 'status status--success';
+            newForm.reset();
+            refreshConsultations();
+          });
+        });
+      }
+    }
+
+    // ---- boot ----
+
+    document.getElementById('btn-logout').addEventListener('click', function () {
+      window.sb.auth.signOut().then(function () { window.location.href = 'index.html'; });
+    });
+
+    window.sb.auth.getSession().then(function (result) {
+      session = result.data.session;
+      if (!session) {
+        window.location.href = 'login.html';
+        return;
+      }
+      return window.sb.from('profiles').select('*').eq('id', session.user.id).single();
+    }).then(function (result) {
+      if (!result) return;
+      if (result.error || !result.data) {
+        window.location.href = 'login.html';
+        return;
+      }
+      profile = result.data;
+      if (profile.role === 'behaviourist') {
+        loadBehaviouristView();
+      } else {
+        loadOwnerView();
+      }
+    });
+  })();
+</script>
