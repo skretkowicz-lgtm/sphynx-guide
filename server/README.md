@@ -2,7 +2,7 @@
 
 Small Express server that serves the Sphynx guide's static site and handles
 `POST /api/contact` by saving the submission to Supabase and emailing it
-over SMTP.
+through Resend.
 
 Dependencies and the `start` script live in the repo-root `package.json`
 (standard Node layout, and what the host builds from); only `server.js`,
@@ -15,11 +15,22 @@ npm install
 cp server/.env.example server/.env
 ```
 
-Edit `server/.env` with your SMTP details. For a Gmail mailbox:
+### Email (Resend)
 
-1. Turn on 2-Step Verification on the Google account.
-2. Create an App Password at https://myaccount.google.com/apppasswords.
-3. Use that 16-character password as `SMTP_PASS` (not your normal password).
+Mail goes out over Resend's HTTPS API rather than SMTP. Railway and most
+other hosts block outbound SMTP ports to deter spam, so connecting to
+`smtp.gmail.com` from a deployed app hangs until it times out; port 443
+always works.
+
+1. Sign up at https://resend.com — register with the address you want the
+   notifications delivered to.
+2. Create an API key at https://resend.com/api-keys and put it in
+   `RESEND_API_KEY`.
+3. Leave `MAIL_FROM` as `onboarding@resend.dev` unless you own a domain.
+   That shared sender needs no DNS setup but can **only** deliver to the
+   address you registered with Resend — which is exactly what's needed
+   here, since `CONTACT_TO` is your own inbox. To send from your own
+   domain, verify it at https://resend.com/domains first.
 
 ### Supabase (submission storage)
 
@@ -90,9 +101,9 @@ user would lock out everyone else.
 - Saves every valid submission to the `contact_submissions` table in
   Supabase, using the service_role key (server-side only, bypasses RLS). A
   Supabase failure is logged but doesn't block the email from sending.
-- Sends as your own authenticated mailbox (`SMTP_USER`) with `replyTo` set
-  to the visitor's address, so replying goes straight to them without
-  risking SPF/DKIM failures from spoofing the "from" address.
+- Sends from `MAIL_FROM` with `replyTo` set to the visitor's address, so
+  replying goes straight to them without spoofing the "from" address and
+  risking SPF/DKIM failures.
 - Sends plain text only (no HTML), so nothing a visitor types can inject
   markup or scripts into the email.
 - Mounts only the pages, `js/` and `images/`, so `server/`, `sql/` and

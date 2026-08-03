@@ -9,32 +9,28 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
 
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.join(__dirname, '..');
 
+// Mail goes out over Resend's HTTPS API rather than SMTP. Railway (like
+// most hosts) blocks outbound SMTP ports to deter spam, so a direct
+// smtp.gmail.com connection hangs until it times out. Port 443 always
+// works, and using the same path locally keeps dev and prod identical.
 const REQUIRED_ENV = [
-  'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'CONTACT_TO',
+  'RESEND_API_KEY', 'MAIL_FROM', 'CONTACT_TO',
   'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
 ];
 const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missingEnv.length) {
   console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
-  console.error('Copy server/.env.example to server/.env and fill in your SMTP and Supabase details.');
+  console.error('Copy server/.env.example to server/.env and fill in your Resend and Supabase details.');
   process.exit(1);
 }
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Service-role key — full table access, bypasses Row Level Security. Only
 // ever used here, server-side. Never send this key to the browser.
@@ -122,17 +118,19 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
       console.error('Supabase insert threw:', err.message);
     });
 
-  const mailed = transporter.sendMail({
-    from: process.env.SMTP_USER,
+  // Resend reports failures as { error } rather than by rejecting, so
+  // normalise both shapes into one value the caller can check.
+  const mailed = resend.emails.send({
+    from: process.env.MAIL_FROM,
     to: process.env.CONTACT_TO,
     replyTo: `${name} <${email}>`,
     subject: `Sphynx guide contact form — ${name}`,
     text: lines.join('\n'),
-  });
+  }).then(({ error }) => error || null, (err) => err);
 
-  const [, mailResult] = await Promise.all([saved, mailed.catch((err) => err)]);
-  if (mailResult instanceof Error) {
-    console.error('Failed to send contact email:', mailResult);
+  const [, mailError] = await Promise.all([saved, mailed]);
+  if (mailError) {
+    console.error('Failed to send contact email:', mailError.message || mailError);
     return res.status(502).json({ ok: false, error: 'Could not send your message. Please try again later.' });
   }
   return res.json({ ok: true });
