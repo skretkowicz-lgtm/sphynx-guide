@@ -159,6 +159,43 @@
     font: inherit; background: var(--ground); border: 1px solid var(--line);
     border-radius: 4px; padding: 0.6rem 0.7rem; color: var(--ink);
   }
+
+  /* Custom file picker: the native input renders its own browser-locale
+     text ("Choose File"), which no page markup can translate, so it is
+     hidden and replaced with a label we control. */
+  .file-picker { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+  /* Specificity has to beat `.field label`, which uppercases field labels —
+     this is a button, so it follows the sentence case used by the others. */
+  .field .file-picker .file-button {
+    flex: none;
+    font: inherit;
+    font-size: 0.88rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.55rem 0.9rem;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .file-button:hover { filter: brightness(0.97); }
+  .file-button:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .file-button input[type="file"] {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .file-chosen {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .field textarea { resize: vertical; min-height: 4rem; }
   .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
     outline: 2px solid var(--focus); outline-offset: 1px;
@@ -312,14 +349,24 @@
   <form class="stacked upload-form">
     <div class="field-row">
       <div class="field">
-        <label>
+        <label for="" class="file-label">
           <span lang="en">File</span>
           <span lang="pl">Plik</span>
         </label>
-        <!-- accept + options are generated in buildUploadForm from the
-             ALLOWED_FILE_TYPES / CATEGORY_LABELS tables, so the lists live
-             in one place each. -->
-        <input type="file" class="upload-file" required>
+        <!-- The native file input's button text ("Choose File / No file
+             chosen") comes from the browser's locale and can't be set from
+             the page, so it's visually hidden behind our own label and the
+             chosen filename is rendered next to it.
+             accept + the category options are generated in buildUploadForm
+             from ALLOWED_FILE_TYPES / CATEGORY_LABELS. -->
+        <div class="file-picker">
+          <label class="file-button">
+            <span lang="en">Choose file</span>
+            <span lang="pl">Wybierz plik</span>
+            <input type="file" class="upload-file" required>
+          </label>
+          <span class="file-chosen"></span>
+        </div>
       </div>
       <div class="field">
         <label>
@@ -492,6 +539,13 @@
       });
     }
 
+    // Stands in for the native input's untranslatable "No file chosen".
+    function showChosenFile(input, el) {
+      var file = input.files && input.files[0];
+      el.textContent = file ? file.name : t('No file chosen', 'Nie wybrano pliku');
+      el.title = file ? file.name : '';
+    }
+
     function fillCategoryOptions(select) {
       var previous = select.value;
       select.innerHTML = '';
@@ -514,8 +568,11 @@
       var statusEl = container.querySelector('.upload-status');
       var submitBtn = form.querySelector('button.submit');
 
+      var chosenEl = container.querySelector('.file-chosen');
       fileInput.accept = ACCEPT_ATTR;
       fillCategoryOptions(categorySelect);
+      showChosenFile(fileInput, chosenEl);
+      fileInput.addEventListener('change', function () { showChosenFile(fileInput, chosenEl); });
 
       form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -553,6 +610,7 @@
           window.setStatus(statusEl, t('Uploaded successfully.', 'Przesłano pomyślnie.'), 'success');
           form.reset();
           fillCategoryOptions(categorySelect);
+          showChosenFile(fileInput, chosenEl);
           onUploaded();
         }).catch(function (err) {
           submitBtn.disabled = false;
@@ -659,6 +717,11 @@
 
     window.onLangChange(function () {
       Array.prototype.forEach.call(document.querySelectorAll('.upload-category'), fillCategoryOptions);
+      Array.prototype.forEach.call(document.querySelectorAll('.file-picker'), function (picker) {
+        var input = picker.querySelector('.upload-file');
+        var el = picker.querySelector('.file-chosen');
+        if (input && el) showChosenFile(input, el);
+      });
       if (rerender) rerender();
     });
 
