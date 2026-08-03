@@ -4,15 +4,18 @@ Small Express server that serves the Sphynx guide's static site and handles
 `POST /api/contact` by saving the submission to Supabase and emailing it
 over SMTP.
 
+Dependencies and the `start` script live in the repo-root `package.json`
+(standard Node layout, and what the host builds from); only `server.js`,
+its helper scripts, and `.env` live in this directory.
+
 ## Setup
 
 ```bash
-cd server
 npm install
-cp .env.example .env
+cp server/.env.example server/.env
 ```
 
-Edit `.env` with your SMTP details. For a Gmail mailbox:
+Edit `server/.env` with your SMTP details. For a Gmail mailbox:
 
 1. Turn on 2-Step Verification on the Google account.
 2. Create an App Password at https://myaccount.google.com/apppasswords.
@@ -50,8 +53,31 @@ Edit `.env` with your SMTP details. For a Gmail mailbox:
 npm start
 ```
 
-Open http://localhost:3000 — this serves `index.html` and handles form
-submissions in one process, so there's nothing else to configure.
+Run it from the repo root, not from `server/`. Open http://localhost:3000 —
+this serves `index.html` and handles form submissions in one process, so
+there's nothing else to configure.
+
+## Deploying to Railway
+
+Railway builds from the repo root, detects Node from the root
+`package.json`, and runs `npm start`. No Dockerfile or build config needed.
+
+1. At https://railway.app, create a project from the GitHub repo.
+2. Under the service's **Variables**, add every key from
+   `server/.env.example` with your real values — `.env` is gitignored and
+   is never deployed, so the platform is the only place production gets
+   them. Also set `NODE_ENV=production`.
+3. Under **Settings → Networking**, generate a public domain.
+4. In Supabase → **Authentication → URL Configuration**, add that domain to
+   **Site URL** and **Redirect URLs**. Without this, the confirmation link
+   in signup emails will refuse to redirect back to the deployed site.
+
+`PORT` is supplied by Railway and read automatically — don't set it.
+
+`NODE_ENV=production` also switches on `trust proxy`, which the rate
+limiter needs to see real client IPs through Railway's reverse proxy.
+Without it every visitor shares one rate-limit bucket, so a single busy
+user would lock out everyone else.
 
 ## What it does
 
@@ -69,8 +95,9 @@ submissions in one process, so there's nothing else to configure.
   risking SPF/DKIM failures from spoofing the "from" address.
 - Sends plain text only (no HTML), so nothing a visitor types can inject
   markup or scripts into the email.
-- Serves the static site itself and blocks `/server/*` so the source and
-  `.env` are never reachable over HTTP.
+- Mounts only the pages, `js/` and `images/`, so `server/`, `sql/` and
+  anything else added at the repo root stay private by default rather than
+  needing an explicit exclusion.
 
 ## Note for later: an admin view
 
