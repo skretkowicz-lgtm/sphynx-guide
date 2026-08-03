@@ -211,6 +211,14 @@
   button.submit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button.submit:disabled { opacity: 0.6; cursor: default; }
 
+  .page-privacy {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    max-width: 70ch;
+    line-height: 1.55;
+  }
+
   .status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
   .status--error { color: var(--danger); }
   .status--success { color: var(--focus); }
@@ -343,6 +351,11 @@
     </div>
 
   </div>
+
+  <p class="page-privacy">
+    <span lang="en">Your consultation records and documents are stored in the EU. See the <a href="privacy.html">Privacy Policy</a> for retention periods and how to request access or erasure.</span>
+    <span lang="pl">Twoje zapisy konsultacji i dokumenty przechowywane są na terenie UE. Okresy przechowywania oraz sposób żądania dostępu lub usunięcia danych opisano w <a href="privacy.html">Polityce Prywatności</a>.</span>
+  </p>
 </main>
 
 <template id="upload-form-template">

@@ -1,0 +1,403 @@
+<title>Privacy Policy — Canadian Sphynx Guide / Polityka Prywatności</title>
+<style>
+  :root {
+    --ground: #edeae4;
+    --surface: #faf8f5;
+    --ink: #221f1b;
+    --ink-soft: #6b6459;
+    --accent: #8a5a3b;
+    --accent-ink: #fbf7f2;
+    --accent-soft: #e6d5c3;
+    --line: #d9d2c6;
+    --focus: #3d6b63;
+    --danger: #a3432c;
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #1a1713;
+    --surface: #221e19;
+    --ink: #f1ece3;
+    --ink-soft: #b5aa9a;
+    --accent: #dd9a63;
+    --accent-ink: #241a10;
+    --accent-soft: #3c2e21;
+    --line: #3a332a;
+    --focus: #6fa89d;
+    --danger: #e0836a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1a1713;
+      --surface: #221e19;
+      --ink: #f1ece3;
+      --ink-soft: #b5aa9a;
+      --accent: #dd9a63;
+      --accent-ink: #241a10;
+      --accent-soft: #3c2e21;
+      --line: #3a332a;
+      --focus: #6fa89d;
+      --danger: #e0836a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [lang] { display: none; }
+  :root[data-lang="en"] [lang="en"] { display: inline; }
+  :root[data-lang="en"] p[lang="en"], :root[data-lang="en"] div[lang="en"],
+  :root[data-lang="en"] span.block[lang="en"] { display: block; }
+  :root[data-lang="pl"] [lang="pl"] { display: inline; }
+  :root[data-lang="pl"] p[lang="pl"], :root[data-lang="pl"] div[lang="pl"],
+  :root[data-lang="pl"] span.block[lang="pl"] { display: block; }
+  li[lang] { display: none; }
+  :root[data-lang="en"] li[lang="en"] { display: list-item; }
+  :root[data-lang="pl"] li[lang="pl"] { display: list-item; }
+
+  a { color: var(--accent); }
+
+  h1, h2 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; }
+
+  header.site {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-display); font-size: 1.05rem; }
+  .brand svg { width: 28px; height: 28px; flex: none; }
+  .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.6rem; }
+
+  .lang-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; flex: none; }
+  .lang-toggle button {
+    border: none; background: transparent; color: var(--ink-soft);
+    font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.05em;
+    padding: 0.35rem 0.7rem; cursor: pointer;
+  }
+  .lang-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .lang-toggle button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--accent); margin: 0 0 0.5rem;
+  }
+  h1 { font-size: 2.1rem; line-height: 1.15; margin-bottom: 0.6rem; }
+  .updated { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 2.5rem; font-family: var(--font-mono); }
+
+  section.legal { margin-bottom: 2.4rem; }
+  section.legal h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.7rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--line);
+  }
+  section.legal p { margin: 0 0 0.8rem; max-width: 68ch; }
+  section.legal ul { margin: 0 0 0.9rem; padding-left: 0; list-style: none; }
+  section.legal li {
+    position: relative; padding-left: 1.1rem; margin-bottom: 0.5rem; max-width: 66ch;
+  }
+  section.legal li::before {
+    content: ""; position: absolute; left: 0; top: 0.62em;
+    width: 5px; height: 5px; background: var(--accent); border-radius: 50%;
+  }
+
+  .fill-me {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 1rem 1.2rem;
+    margin: 0 0 1.4rem;
+  }
+  .fill-me p { margin: 0 0 0.4rem; font-size: 0.94rem; }
+  .fill-me p:last-child { margin-bottom: 0; }
+  .placeholder {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    background: var(--ground);
+    border: 1px dashed var(--accent);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+    color: var(--accent);
+  }
+
+  .data-table { width: 100%; overflow-x: auto; margin: 0 0 1rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 460px; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-soft); font-weight: 600;
+  }
+
+  footer.site {
+    border-top: 1px solid var(--line);
+    padding: 1.6rem 1.5rem 2.4rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  footer.site p { color: var(--ink-soft); font-size: 0.82rem; max-width: 60ch; margin: 0 0 0.5rem; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="site">
+  <div class="brand">
+    <a href="index.html">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M8 30 C8 18 12 10 20 10 C28 10 32 18 32 30" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <path d="M13 12 L9 4 L18 10 Z" fill="var(--accent)"/>
+        <path d="M27 12 L31 4 L22 10 Z" fill="var(--accent)"/>
+        <circle cx="16" cy="21" r="1.4" fill="var(--accent)"/>
+        <circle cx="24" cy="21" r="1.4" fill="var(--accent)"/>
+      </svg>
+      <span>
+        <span lang="en">Canadian Sphynx Guide</span>
+        <span lang="pl">Przewodnik po Sfinksie</span>
+      </span>
+    </a>
+  </div>
+  <div class="lang-toggle" role="group" aria-label="Language / Język">
+    <button id="btn-en" type="button" aria-pressed="true">EN</button>
+    <button id="btn-pl" type="button" aria-pressed="false">PL</button>
+  </div>
+</header>
+
+<main>
+  <p class="eyebrow">
+    <span lang="en">Privacy</span>
+    <span lang="pl">Prywatność</span>
+  </p>
+  <h1>
+    <span lang="en">Privacy Policy</span>
+    <span lang="pl">Polityka Prywatności</span>
+  </h1>
+  <p class="updated">
+    <span lang="en">Last updated: 3 August 2026</span>
+    <span lang="pl">Ostatnia aktualizacja: 3 sierpnia 2026</span>
+  </p>
+
+  <div class="fill-me">
+    <p lang="en"><strong>Before publishing:</strong> the controller's details below must be completed. A privacy notice without an identifiable controller and a working contact address does not satisfy Article 13 GDPR.</p>
+    <p lang="pl"><strong>Przed publikacją:</strong> poniższe dane administratora muszą zostać uzupełnione. Klauzula informacyjna bez możliwego do zidentyfikowania administratora i działającego adresu kontaktowego nie spełnia wymogów art. 13 RODO.</p>
+  </div>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">1. Who is responsible for your data</span>
+      <span lang="pl">1. Kto odpowiada za Twoje dane</span>
+    </h2>
+    <p lang="en">The controller of your personal data (<em>administrator danych osobowych</em>) is:</p>
+    <p lang="pl">Administratorem Twoich danych osobowych jest:</p>
+    <ul>
+      <li lang="en"><span class="placeholder">[FULL NAME / BUSINESS NAME]</span></li>
+      <li lang="pl"><span class="placeholder">[IMIĘ I NAZWISKO / NAZWA FIRMY]</span></li>
+      <li lang="en"><span class="placeholder">[ADDRESS]</span></li>
+      <li lang="pl"><span class="placeholder">[ADRES]</span></li>
+      <li lang="en">Email: <span class="placeholder">[CONTACT EMAIL]</span></li>
+      <li lang="pl">E-mail: <span class="placeholder">[ADRES E-MAIL DO KONTAKTU]</span></li>
+    </ul>
+    <p lang="en">For any question about this policy or to exercise your rights, write to the address above.</p>
+    <p lang="pl">W sprawach dotyczących tej polityki lub realizacji Twoich praw pisz na powyższy adres.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">2. What data we collect</span>
+      <span lang="pl">2. Jakie dane zbieramy</span>
+    </h2>
+
+    <p lang="en"><strong>If you use the contact form</strong> — your name, email address, phone number (only if you choose to give one), whether you are asking about a behaviourist consultation, and the content of your message.</p>
+    <p lang="pl"><strong>Jeśli korzystasz z formularza kontaktowego</strong> — Twoje imię i nazwisko, adres e-mail, numer telefonu (tylko jeśli go podasz), informacja czy pytasz o konsultację behawioralną oraz treść wiadomości.</p>
+
+    <p lang="en"><strong>If you create an account</strong> — your email address, your name, and your password. The password is stored only as a cryptographic hash; it is never visible to us in readable form.</p>
+    <p lang="pl"><strong>Jeśli zakładasz konto</strong> — Twój adres e-mail, imię i nazwisko oraz hasło. Hasło przechowywane jest wyłącznie w postaci skrótu kryptograficznego; nigdy nie jest dla nas widoczne w czytelnej formie.</p>
+
+    <p lang="en"><strong>If you use consultation services</strong> — the date, time and format (online or in person) of each consultation, together with the notes recorded for it.</p>
+    <p lang="pl"><strong>Jeśli korzystasz z konsultacji</strong> — data, godzina i forma (online lub stacjonarnie) każdej konsultacji wraz z zapisanymi do niej notatkami.</p>
+
+    <p lang="en"><strong>Files you or the behaviourist upload</strong> — documents, images and recordings, along with their file names, formats and upload dates. These usually concern your cat, but may incidentally contain information about you or your household.</p>
+    <p lang="pl"><strong>Pliki przesłane przez Ciebie lub behawiorystę</strong> — dokumenty, zdjęcia i nagrania wraz z nazwami plików, formatami i datami przesłania. Zwykle dotyczą one Twojego kota, ale mogą ubocznie zawierać informacje o Tobie lub Twoim gospodarstwie domowym.</p>
+
+    <p lang="en">We do not use analytics, advertising or tracking of any kind, and we do not build profiles of visitors.</p>
+    <p lang="pl">Nie stosujemy analityki, reklam ani śledzenia jakiegokolwiek rodzaju i nie tworzymy profili odwiedzających.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">3. Why we process it, and on what legal basis</span>
+      <span lang="pl">3. W jakim celu i na jakiej podstawie prawnej</span>
+    </h2>
+    <div class="data-table">
+      <table lang="en">
+        <thead><tr><th>Data</th><th>Purpose</th><th>Legal basis (GDPR)</th></tr></thead>
+        <tbody>
+          <tr><td>Contact form</td><td>To answer your enquiry</td><td>Art. 6(1)(b) — steps taken at your request before entering a contract; or Art. 6(1)(f) — our legitimate interest in replying to enquiries</td></tr>
+          <tr><td>Account details</td><td>To let you sign in and see your own records</td><td>Art. 6(1)(b) — performance of a contract</td></tr>
+          <tr><td>Consultation history</td><td>To document the advice given and keep a record of your case</td><td>Art. 6(1)(b) — performance of a contract</td></tr>
+          <tr><td>Uploaded documents</td><td>To share and preserve materials relating to your consultations</td><td>Art. 6(1)(b) — performance of a contract</td></tr>
+        </tbody>
+      </table>
+      <table lang="pl">
+        <thead><tr><th>Dane</th><th>Cel</th><th>Podstawa prawna (RODO)</th></tr></thead>
+        <tbody>
+          <tr><td>Formularz kontaktowy</td><td>Udzielenie odpowiedzi na zapytanie</td><td>Art. 6 ust. 1 lit. b — działania na Twoje żądanie przed zawarciem umowy; lub art. 6 ust. 1 lit. f — nasz prawnie uzasadniony interes w odpowiadaniu na zapytania</td></tr>
+          <tr><td>Dane konta</td><td>Umożliwienie logowania i dostępu do własnych danych</td><td>Art. 6 ust. 1 lit. b — wykonanie umowy</td></tr>
+          <tr><td>Historia konsultacji</td><td>Udokumentowanie udzielonych porad i prowadzenie historii sprawy</td><td>Art. 6 ust. 1 lit. b — wykonanie umowy</td></tr>
+          <tr><td>Przesłane dokumenty</td><td>Udostępnianie i przechowywanie materiałów dotyczących konsultacji</td><td>Art. 6 ust. 1 lit. b — wykonanie umowy</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p lang="en">Note: information about an animal's health is not "health data" about a person under Article 9 GDPR, so veterinary records relating to your cat are not treated as a special category of personal data.</p>
+    <p lang="pl">Uwaga: informacje o zdrowiu zwierzęcia nie stanowią „danych dotyczących zdrowia” osoby fizycznej w rozumieniu art. 9 RODO, dlatego dokumentacja weterynaryjna Twojego kota nie jest traktowana jako szczególna kategoria danych osobowych.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">4. Where your data is stored and who processes it</span>
+      <span lang="pl">4. Gdzie przechowujemy dane i kto je przetwarza</span>
+    </h2>
+    <p lang="en">We use the following providers, who act as processors on our behalf under written agreements:</p>
+    <p lang="pl">Korzystamy z następujących dostawców, którzy działają jako podmioty przetwarzające na nasze zlecenie na podstawie umów powierzenia:</p>
+    <div class="data-table">
+      <table lang="en">
+        <thead><tr><th>Provider</th><th>Role</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td>Supabase</td><td>Database, accounts, file storage</td><td>European Union (Stockholm, <code>eu-north-1</code>)</td></tr>
+          <tr><td>Railway</td><td>Website hosting</td><td>European Union (EU West)</td></tr>
+          <tr><td>Resend</td><td>Delivery of contact-form notifications</td><td>United States</td></tr>
+          <tr><td>Google (Gmail)</td><td>Mailbox receiving those notifications</td><td>United States / global</td></tr>
+        </tbody>
+      </table>
+      <table lang="pl">
+        <thead><tr><th>Dostawca</th><th>Rola</th><th>Lokalizacja</th></tr></thead>
+        <tbody>
+          <tr><td>Supabase</td><td>Baza danych, konta, przechowywanie plików</td><td>Unia Europejska (Sztokholm, <code>eu-north-1</code>)</td></tr>
+          <tr><td>Railway</td><td>Hosting strony</td><td>Unia Europejska (EU West)</td></tr>
+          <tr><td>Resend</td><td>Dostarczanie powiadomień z formularza</td><td>Stany Zjednoczone</td></tr>
+          <tr><td>Google (Gmail)</td><td>Skrzynka odbierająca te powiadomienia</td><td>Stany Zjednoczone / globalnie</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p lang="en">Your account data, consultation history and uploaded files are stored inside the European Union. Contact-form notifications are additionally sent by email, which involves a transfer to the United States. Such transfers rely on the European Commission's Standard Contractual Clauses and, where applicable, the EU–US Data Privacy Framework.</p>
+    <p lang="pl">Dane Twojego konta, historia konsultacji i przesłane pliki są przechowywane na terenie Unii Europejskiej. Powiadomienia z formularza kontaktowego są dodatkowo wysyłane e-mailem, co wiąże się z przekazaniem danych do Stanów Zjednoczonych. Takie przekazanie odbywa się na podstawie standardowych klauzul umownych Komisji Europejskiej oraz — w odpowiednich przypadkach — Ram Ochrony Danych UE–USA (EU–US Data Privacy Framework).</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">5. How long we keep it</span>
+      <span lang="pl">5. Jak długo przechowujemy dane</span>
+    </h2>
+    <ul>
+      <li lang="en">Contact-form messages: kept while your enquiry is handled and for a reasonable period afterwards, then deleted.</li>
+      <li lang="pl">Wiadomości z formularza kontaktowego: przechowywane przez czas obsługi zapytania i przez rozsądny okres po jego zakończeniu, a następnie usuwane.</li>
+      <li lang="en">Account, consultation history and uploaded files: kept for as long as you hold an account, and afterwards only where a legal obligation (for example accounting or limitation periods) requires it.</li>
+      <li lang="pl">Konto, historia konsultacji i przesłane pliki: przechowywane tak długo, jak posiadasz konto, a po jego zamknięciu wyłącznie w zakresie wymaganym przepisami (np. obowiązki rachunkowe lub okresy przedawnienia).</li>
+      <li lang="en">You may ask for erasure at any time — see section 6.</li>
+      <li lang="pl">W każdej chwili możesz zażądać usunięcia danych — zob. punkt 6.</li>
+    </ul>
+    <p lang="en">Consultation records and uploaded documents cannot be edited or deleted from within the site once created. This is deliberate, so that a record of advice given cannot be altered after the fact. Deletion on request is carried out manually by the controller.</p>
+    <p lang="pl">Zapisy konsultacji i przesłane dokumenty nie mogą być edytowane ani usuwane z poziomu serwisu po ich utworzeniu. Jest to działanie celowe, aby zapis udzielonych porad nie mógł zostać zmieniony po fakcie. Usunięcie na żądanie realizuje administrator ręcznie.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">6. Your rights</span>
+      <span lang="pl">6. Twoje prawa</span>
+    </h2>
+    <p lang="en">Under the GDPR you have the right to:</p>
+    <p lang="pl">Na podstawie RODO przysługuje Ci prawo do:</p>
+    <ul>
+      <li lang="en">access your data and receive a copy of it;</li>
+      <li lang="pl">dostępu do swoich danych i otrzymania ich kopii;</li>
+      <li lang="en">have inaccurate data corrected;</li>
+      <li lang="pl">sprostowania nieprawidłowych danych;</li>
+      <li lang="en">have your data erased ("right to be forgotten");</li>
+      <li lang="pl">usunięcia danych („prawo do bycia zapomnianym”);</li>
+      <li lang="en">restrict how we process your data;</li>
+      <li lang="pl">ograniczenia przetwarzania danych;</li>
+      <li lang="en">receive your data in a portable, machine-readable format;</li>
+      <li lang="pl">przenoszenia danych w ustrukturyzowanym formacie nadającym się do odczytu maszynowego;</li>
+      <li lang="en">object to processing based on our legitimate interest;</li>
+      <li lang="pl">wniesienia sprzeciwu wobec przetwarzania opartego na prawnie uzasadnionym interesie;</li>
+      <li lang="en">withdraw consent at any time, where processing is based on consent — this does not affect the lawfulness of processing carried out beforehand.</li>
+      <li lang="pl">cofnięcia zgody w dowolnym momencie, jeżeli przetwarzanie opiera się na zgodzie — nie wpływa to na zgodność z prawem przetwarzania dokonanego wcześniej.</li>
+    </ul>
+    <p lang="en">To exercise any of these, contact the controller using the details in section 1. We will respond within one month.</p>
+    <p lang="pl">Aby skorzystać z tych praw, skontaktuj się z administratorem, korzystając z danych w punkcie 1. Odpowiemy w terminie jednego miesiąca.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">7. Complaints</span>
+      <span lang="pl">7. Skargi</span>
+    </h2>
+    <p lang="en">If you believe your data is being handled unlawfully, you may lodge a complaint with the Polish supervisory authority:</p>
+    <p lang="pl">Jeżeli uważasz, że Twoje dane są przetwarzane niezgodnie z prawem, możesz wnieść skargę do organu nadzorczego:</p>
+    <ul>
+      <li lang="en">President of the Personal Data Protection Office (Prezes Urzędu Ochrony Danych Osobowych)</li>
+      <li lang="pl">Prezes Urzędu Ochrony Danych Osobowych (PUODO)</li>
+      <li lang="en">ul. Stawki 2, 00-193 Warsaw, Poland — <a href="https://uodo.gov.pl" target="_blank" rel="noopener">uodo.gov.pl</a></li>
+      <li lang="pl">ul. Stawki 2, 00-193 Warszawa — <a href="https://uodo.gov.pl" target="_blank" rel="noopener">uodo.gov.pl</a></li>
+    </ul>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">8. Is providing data required?</span>
+      <span lang="pl">8. Czy podanie danych jest obowiązkowe?</span>
+    </h2>
+    <p lang="en">Providing your data is voluntary, but it is necessary for the purpose concerned: without a name, email address and message we cannot reply to an enquiry, and without an account we cannot show you your consultation history. The phone number is always optional and is used only if you ask to be called back.</p>
+    <p lang="pl">Podanie danych jest dobrowolne, ale niezbędne do realizacji danego celu: bez imienia, adresu e-mail i treści wiadomości nie odpowiemy na zapytanie, a bez konta nie udostępnimy historii konsultacji. Numer telefonu jest zawsze opcjonalny i wykorzystywany wyłącznie wtedy, gdy poprosisz o kontakt telefoniczny.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">9. Cookies and browser storage</span>
+      <span lang="pl">9. Pliki cookie i pamięć przeglądarki</span>
+    </h2>
+    <p lang="en">This site sets no advertising or analytics cookies. If you sign in, your browser stores a session token locally so you stay logged in between pages. This is strictly necessary for the login to function, so it does not require consent. Logging out removes it.</p>
+    <p lang="pl">Ta strona nie stosuje plików cookie reklamowych ani analitycznych. Po zalogowaniu przeglądarka zapisuje lokalnie token sesji, dzięki któremu pozostajesz zalogowany między podstronami. Jest to bezwzględnie niezbędne do działania logowania, więc nie wymaga zgody. Wylogowanie usuwa ten token.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">10. Automated decision-making</span>
+      <span lang="pl">10. Zautomatyzowane podejmowanie decyzji</span>
+    </h2>
+    <p lang="en">Your data is not used for automated decision-making or profiling within the meaning of Article 22 GDPR.</p>
+    <p lang="pl">Twoje dane nie są wykorzystywane do zautomatyzowanego podejmowania decyzji ani profilowania w rozumieniu art. 22 RODO.</p>
+  </section>
+
+  <section class="legal">
+    <h2>
+      <span lang="en">11. Changes to this policy</span>
+      <span lang="pl">11. Zmiany polityki</span>
+    </h2>
+    <p lang="en">If this policy changes, the revised version will be published on this page with a new "last updated" date.</p>
+    <p lang="pl">W przypadku zmiany tej polityki nowa wersja zostanie opublikowana na tej stronie wraz z nową datą aktualizacji.</p>
+  </section>
+</main>
+
+<footer class="site">
+  <p lang="en">This page provides general information and is not a substitute for veterinary or professional behavioural advice.</p>
+  <p lang="pl">Ta strona zawiera ogólne informacje i nie zastępuje porady weterynaryjnej ani profesjonalnej porady behawioralnej.</p>
+  <p><a href="index.html"><span lang="en">← Back to the guide</span><span lang="pl">← Powrót do przewodnika</span></a></p>
+</footer>
+
+<script src="js/site.js"></script>

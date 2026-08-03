@@ -181,6 +181,10 @@
   }
   .toggle-mode button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
+  /* Only shown in signup mode — signing in collects nothing new. */
+  .privacy-note { margin: 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; }
+  [data-mode="signin"] #signup-privacy { display: none; }
+
   .status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
   .status--error { color: var(--danger); }
   .status--success { color: var(--focus); }
@@ -267,9 +271,13 @@
         </span>
       </button>
       <p class="status" id="status" role="status" aria-live="polite"></p>
+      <p class="privacy-note" id="signup-privacy">
+        <span lang="en">By creating an account you agree to your details, consultation history and uploaded files being stored as described in the <a href="privacy.html">Privacy Policy</a>.</span>
+        <span lang="pl">Zakładając konto, zgadzasz się na przechowywanie Twoich danych, historii konsultacji i przesłanych plików na zasadach opisanych w <a href="privacy.html">Polityce Prywatności</a>.</span>
+      </p>
     </form>
 
-    <p class="toggle-mode">
+    <p class="toggle-mode" style="margin-top: 0.9rem;">
       <span id="toggle-to-signup">
         <span lang="en">Don't have an account?</span>
         <span lang="pl">Nie masz konta?</span>

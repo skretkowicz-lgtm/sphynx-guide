@@ -140,7 +140,7 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
 // root and carving exceptions out of it. Anything new at the root (sql/,
 // scripts/, notes) is private by default because it was never mounted.
 const staticOptions = { dotfiles: 'deny' };
-for (const page of ['index.html', 'login.html', 'profile.html']) {
+for (const page of ['index.html', 'login.html', 'profile.html', 'privacy.html']) {
   app.get(`/${page}`, (req, res) => res.sendFile(path.join(PROJECT_ROOT, page)));
 }
 app.get('/', (req, res) => res.sendFile(path.join(PROJECT_ROOT, 'index.html')));
