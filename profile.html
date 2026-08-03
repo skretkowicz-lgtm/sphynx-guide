@@ -148,6 +148,30 @@
     padding: 0.2rem 0.55rem; border-radius: 4px; flex: none; white-space: nowrap;
   }
 
+  /* Cancelled and no-show rows stay visible — a client needs to see that a
+     session is off — but read as clearly inactive. */
+  .appt-inactive { opacity: 0.6; }
+  .appt-inactive .when { text-decoration: line-through; }
+
+  /* .badge is flex:none inside a space-between parent, so two bare siblings
+     would drift apart; group them. */
+  .badge-group { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex: none; }
+  .badge-group .link-btn { font-size: 0.72rem; padding: 0.25rem 0.6rem; }
+
+  h3.sub {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 0.6rem;
+    font-weight: 600;
+  }
+
+  .tz-note { margin: 0.75rem 0 0; font-size: 0.75rem; color: var(--ink-soft); font-style: italic; }
+  .consult-item .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
+  .consult-item .meta a { word-break: break-all; }
+
   .doc-item .file-name { font-weight: 600; word-break: break-word; }
   .doc-item .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
   .doc-item button.link-btn { flex: none; }
@@ -277,6 +301,17 @@
         <span lang="pl">Moje Konsultacje i Dokumenty</span>
       </h1>
 
+      <!-- Upcoming only. Past appointments would duplicate the consultation
+           history immediately below and double the rows on mobile. -->
+      <section class="panel">
+        <h2><span lang="en">Upcoming Appointments</span><span lang="pl">Nadchodzące Wizyty</span></h2>
+        <ul class="list" id="owner-appointments"></ul>
+        <p class="tz-note">
+          <span lang="en">All times are Warsaw time (Europe/Warsaw).</span>
+          <span lang="pl">Wszystkie godziny w czasie warszawskim (Europa/Warszawa).</span>
+        </p>
+      </section>
+
       <section class="panel">
         <h2><span lang="en">Consultation History</span><span lang="pl">Historia Konsultacji</span></h2>
         <ul class="list" id="owner-consultations"></ul>
@@ -297,6 +332,17 @@
         <span lang="pl">Konsultacje i Dokumenty Klientów</span>
       </h1>
 
+      <!-- Across all clients: answers "what's on this week", which the
+           per-client lists below cannot. -->
+      <section class="panel">
+        <h2><span lang="en">Upcoming — All Clients</span><span lang="pl">Nadchodzące — Wszyscy Klienci</span></h2>
+        <ul class="list" id="all-appointments"></ul>
+        <p class="tz-note">
+          <span lang="en">All times are Warsaw time (Europe/Warsaw).</span>
+          <span lang="pl">Wszystkie godziny w czasie warszawskim (Europa/Warszawa).</span>
+        </p>
+      </section>
+
       <section class="panel">
         <h2><span lang="en">Select a Client</span><span lang="pl">Wybierz Klienta</span></h2>
         <select class="client-picker" id="client-picker">
@@ -306,6 +352,66 @@
       </section>
 
       <div id="client-detail" style="display:none;">
+        <section class="panel">
+          <h2><span lang="en">Appointments</span><span lang="pl">Wizyty</span></h2>
+
+          <h3 class="sub"><span lang="en">Upcoming</span><span lang="pl">Nadchodzące</span></h3>
+          <ul class="list" id="beh-appt-upcoming" style="margin-bottom: 1.25rem;"></ul>
+
+          <h3 class="sub"><span lang="en">Past</span><span lang="pl">Minione</span></h3>
+          <ul class="list" id="beh-appt-past" style="margin-bottom: 1.25rem;"></ul>
+
+          <h3 class="sub"><span lang="en">Schedule an Appointment</span><span lang="pl">Zaplanuj Wizytę</span></h3>
+          <form class="stacked" id="appointment-form">
+            <div class="field-row">
+              <div class="field">
+                <label for="appt-date"><span lang="en">Date &amp; time</span><span lang="pl">Data i godzina</span></label>
+                <input type="datetime-local" id="appt-date" required>
+                <span class="hint">
+                  <span lang="en">Warsaw time (Europe/Warsaw).</span>
+                  <span lang="pl">Czas warszawski (Europa/Warszawa).</span>
+                </span>
+                <span class="hint status--error" id="tz-warning" hidden></span>
+              </div>
+              <div class="field">
+                <label for="appt-duration"><span lang="en">Duration (minutes)</span><span lang="pl">Czas trwania (minuty)</span></label>
+                <input type="number" id="appt-duration" value="60" min="5" max="600" step="5">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="appt-mode"><span lang="en">Mode</span><span lang="pl">Forma</span></label>
+                <select id="appt-mode">
+                  <option value="online" lang="en">Online</option>
+                  <option value="online" lang="pl">Online</option>
+                  <option value="in_person" lang="en">In person</option>
+                  <option value="in_person" lang="pl">Stacjonarnie</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="appt-location"><span lang="en">Link or address</span><span lang="pl">Link lub adres</span></label>
+                <input type="text" id="appt-location" placeholder="https://…">
+              </div>
+            </div>
+            <div class="field">
+              <label for="appt-notes">
+                <span lang="en">Notes for the client (optional)</span>
+                <span lang="pl">Notatki dla klienta (opcjonalnie)</span>
+              </label>
+              <textarea id="appt-notes"></textarea>
+              <span class="hint">
+                <span lang="en">Visible to the client — use it for what to bring or how to prepare.</span>
+                <span lang="pl">Widoczne dla klienta — napisz, co przynieść lub jak się przygotować.</span>
+              </span>
+            </div>
+            <button class="submit" type="submit">
+              <span lang="en">Schedule Appointment</span>
+              <span lang="pl">Zaplanuj Wizytę</span>
+            </button>
+            <p class="status" id="appt-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
         <section class="panel">
           <h2><span lang="en">Consultation History</span><span lang="pl">Historia Konsultacji</span></h2>
           <ul class="list" id="beh-consultations" style="margin-bottom: 1.25rem;"></ul>
@@ -435,6 +541,13 @@
       online: { en: 'Online', pl: 'Online' },
       in_person: { en: 'In person', pl: 'Stacjonarnie' },
     };
+    // No 'completed' — see sql/005. A past appointment still marked
+    // 'scheduled' is one that went ahead, so it needs no label of its own.
+    var STATUS_LABELS = {
+      scheduled: { en: 'Scheduled', pl: 'Zaplanowana' },
+      cancelled: { en: 'Cancelled', pl: 'Odwołana' },
+      no_show: { en: 'No-show', pl: 'Nieobecność' },
+    };
 
     var app = document.getElementById('app');
     var loadingEl = document.getElementById('loading');
@@ -457,10 +570,17 @@
       return entry ? t(entry.en, entry.pl) : key;
     }
 
+    // The practice runs on Warsaw time, so pin the zone rather than
+    // rendering in whatever zone the reader's browser happens to be in.
+    // Without this the same appointment shows as 14:00 in Warsaw, 08:00 in
+    // New York and 21:00 in Tokyo, with nothing on screen saying which —
+    // a client abroad would simply miss the session.
+    var PRACTICE_TZ = 'Europe/Warsaw';
+
     function fmtDateTime(iso) {
       try {
         return new Date(iso).toLocaleString(t('en-GB', 'pl-PL'), {
-          dateStyle: 'medium', timeStyle: 'short',
+          dateStyle: 'medium', timeStyle: 'short', timeZone: PRACTICE_TZ,
         });
       } catch (e) {
         return iso;
@@ -528,6 +648,55 @@
       });
     }
 
+    // Builds one appointment row. `nameFor` is supplied only by the
+    // cross-client view, which needs to say who each appointment is with;
+    // per-client lists already have that context and pass nothing.
+    function appointmentItem(row, opts) {
+      opts = opts || {};
+      var li = document.createElement('li');
+      li.className = 'consult-item' + (row.status === 'scheduled' ? '' : ' appt-inactive');
+
+      var left = document.createElement('div');
+      var parts = ['<div class="when">' + esc(fmtDateTime(row.scheduled_at)) + '</div>'];
+      // Only the cross-client view supplies nameFor; per-client lists
+      // already have that context from the picker.
+      var who = opts.nameFor ? opts.nameFor(row) : '';
+      if (who) parts.push('<div class="notes">' + esc(who) + '</div>');
+      parts.push('<div class="meta">' + esc(row.duration_minutes) + ' min</div>');
+
+      // esc() makes a value safe as HTML text, but does NOT neutralise a URL
+      // scheme — a javascript: href survives escaping intact and would run in
+      // the client's logged-in session. Only https links become clickable;
+      // anything else (an in-person address) renders as plain text.
+      if (row.location) {
+        if (/^https:\/\//i.test(row.location)) {
+          parts.push('<div class="meta"><a href="' + esc(row.location) +
+            '" target="_blank" rel="noopener">' + esc(row.location) + '</a></div>');
+        } else {
+          parts.push('<div class="meta">' + esc(row.location) + '</div>');
+        }
+      }
+      if (row.notes) parts.push('<div class="notes">' + esc(row.notes) + '</div>');
+      left.innerHTML = parts.join('');
+
+      var badges = document.createElement('span');
+      badges.className = 'badge-group';
+      badges.innerHTML = '<span class="badge">' + esc(labelFrom(MODE_LABELS, row.mode)) + '</span>' +
+        (row.status === 'scheduled' ? '' :
+          '<span class="badge">' + esc(labelFrom(STATUS_LABELS, row.status)) + '</span>');
+
+      li.appendChild(left);
+      if (opts.actions) badges.appendChild(opts.actions(row));
+      li.appendChild(badges);
+      return li;
+    }
+
+    function renderAppointments(listEl, rows, emptyText, opts) {
+      renderList(listEl, rows, emptyText, function (row) {
+        return appointmentItem(row, opts);
+      });
+    }
+
     // ---- data ----
 
     function loadList(table, orderCol, ownerId, listEl, render) {
@@ -539,6 +708,47 @@
             return;
           }
           render(listEl, result.data || []);
+        });
+    }
+
+    // One query, split in JS. loadList() hardcodes descending order and has
+    // no date filter, and generalising it would mean editing working code
+    // for no gain at this data volume.
+    //
+    // `upcoming` is nearest-first (ascending); `past` is most-recent-first.
+    // Cancelled future appointments stay in `upcoming` on purpose — the
+    // client needs to see that a session they expected is off.
+    function loadAppointments(ownerId, onLoaded, onError) {
+      var query = window.sb.from('appointments').select('*')
+        .order('scheduled_at', { ascending: false });
+      if (ownerId) query = query.eq('owner_id', ownerId);
+      return query.then(function (result) {
+        if (result.error) {
+          onError(result.error.message);
+          return;
+        }
+        var now = Date.now();
+        var upcoming = [];
+        var past = [];
+        (result.data || []).forEach(function (row) {
+          (new Date(row.scheduled_at).getTime() >= now ? upcoming : past).push(row);
+        });
+        upcoming.reverse();
+        onLoaded(upcoming, past);
+      });
+    }
+
+    function updateAppointmentStatus(id, status, afterwards) {
+      // .select() matters: without it supabase-js sends Prefer:
+      // return=minimal and resolves { data: null, error: null } for BOTH a
+      // successful update and one RLS silently blocked to zero rows.
+      window.sb.from('appointments').update({ status: status }).eq('id', id).select()
+        .then(function (result) {
+          if (result.error || !(result.data || []).length) {
+            alert(t('Could not update the appointment.', 'Nie udało się zaktualizować wizyty.'));
+            return;
+          }
+          afterwards();
         });
     }
 
@@ -645,12 +855,20 @@
       function refreshDocs() {
         return loadList('documents', 'created_at', profile.id, docList, renderDocuments);
       }
+      var apptList = document.getElementById('owner-appointments');
+      function refreshAppointments() {
+        return loadAppointments(profile.id, function (upcoming) {
+          renderAppointments(apptList, upcoming,
+            t('No upcoming appointments.', 'Brak nadchodzących wizyt.'));
+        }, function (msg) { renderListError(apptList, msg); });
+      }
 
+      refreshAppointments();
       refreshConsultations();
       refreshDocs();
       buildUploadForm(document.getElementById('owner-upload'), profile.id, refreshDocs);
 
-      rerender = function () { refreshConsultations(); refreshDocs(); };
+      rerender = function () { refreshAppointments(); refreshConsultations(); refreshDocs(); };
     }
 
     // ---- behaviourist view ----
@@ -671,6 +889,73 @@
         return loadList('documents', 'created_at', picker.value, docList, renderDocuments);
       }
 
+      var upcomingList = document.getElementById('beh-appt-upcoming');
+      var pastList = document.getElementById('beh-appt-past');
+      var allList = document.getElementById('all-appointments');
+      var apptForm = document.getElementById('appointment-form');
+      var apptStatus = document.getElementById('appt-status');
+      // id -> display name, built from the client list already fetched for
+      // the picker. Avoids PostgREST embedding, which would need an explicit
+      // FK hint here since appointments references profiles twice.
+      var clientNames = {};
+
+      // Buttons live on the row so status can be changed without leaving the
+      // list. Cancelled/no-show rows get a single "Reinstate" instead.
+      function statusActions(refresh) {
+        return function (row) {
+          var wrap = document.createElement('span');
+          wrap.style.display = 'flex';
+          wrap.style.gap = '0.35rem';
+          function button(labelEn, labelPl, next) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'link-btn';
+            b.textContent = t(labelEn, labelPl);
+            b.addEventListener('click', function () {
+              updateAppointmentStatus(row.id, next, refresh);
+            });
+            return b;
+          }
+          if (row.status === 'scheduled') {
+            wrap.appendChild(button('Cancel', 'Odwołaj', 'cancelled'));
+            wrap.appendChild(button('No-show', 'Nieobecność', 'no_show'));
+          } else {
+            wrap.appendChild(button('Reinstate', 'Przywróć', 'scheduled'));
+          }
+          return wrap;
+        };
+      }
+
+      function refreshClientAppointments() {
+        return loadAppointments(picker.value, function (upcoming, past) {
+          renderAppointments(upcomingList, upcoming,
+            t('No upcoming appointments.', 'Brak nadchodzących wizyt.'),
+            { actions: statusActions(refreshClientAppointments) });
+          renderAppointments(pastList, past,
+            t('No past appointments.', 'Brak minionych wizyt.'),
+            { actions: statusActions(refreshClientAppointments) });
+        }, function (msg) {
+          renderListError(upcomingList, msg);
+          renderListError(pastList, msg);
+        });
+      }
+
+      function refreshAllAppointments() {
+        return loadAppointments(null, function (upcoming) {
+          renderAppointments(allList, upcoming,
+            t('Nothing scheduled.', 'Brak zaplanowanych wizyt.'),
+            {
+              // Resolved at render time, so this works whether the client
+              // list has arrived yet or not.
+              nameFor: function (row) { return clientNames[row.owner_id] || ''; },
+              actions: statusActions(function () {
+                refreshAllAppointments();
+                if (picker.value) refreshClientAppointments();
+              }),
+            });
+        }, function (msg) { renderListError(allList, msg); });
+      }
+
       window.sb.from('profiles').select('*').eq('role', 'owner').order('full_name').then(function (result) {
         if (result.error) {
           window.setStatus(consultStatus, t('Could not load the client list: ', 'Nie udało się wczytać listy klientów: ')
@@ -678,12 +963,18 @@
           return;
         }
         (result.data || []).forEach(function (client) {
+          var label = (client.full_name || t('(no name)', '(bez nazwy)')) + ' — ' + client.email;
+          clientNames[client.id] = label;
           var opt = document.createElement('option');
           opt.value = client.id;
-          opt.textContent = (client.full_name || t('(no name)', '(bez nazwy)')) + ' — ' + client.email;
+          opt.textContent = label;
           picker.appendChild(opt);
         });
+        // Re-render once names are known so the cross-client rows are labelled.
+        refreshAllAppointments();
       });
+
+      refreshAllAppointments();
 
       picker.addEventListener('change', function () {
         if (!picker.value) {
@@ -691,9 +982,48 @@
           return;
         }
         detail.style.display = '';
+        refreshClientAppointments();
         refreshConsultations();
         refreshDocs();
         buildUploadForm(document.getElementById('beh-upload'), picker.value, refreshDocs);
+      });
+
+      // datetime-local is naive-local: a browser set to another zone would
+      // silently shift every appointment created from it.
+      if (Intl.DateTimeFormat().resolvedOptions().timeZone !== PRACTICE_TZ) {
+        var warn = document.getElementById('tz-warning');
+        warn.hidden = false;
+        warn.textContent = t(
+          'Your device is not on Warsaw time — entered times will be shifted.',
+          'Twoje urządzenie nie jest w czasie warszawskim — wpisane godziny zostaną przesunięte.'
+        );
+      }
+
+      apptForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var clientId = picker.value;
+        var dateVal = document.getElementById('appt-date').value;
+        if (!clientId || !dateVal) return;
+
+        window.sb.from('appointments').insert({
+          owner_id: clientId,
+          scheduled_at: new Date(dateVal).toISOString(),
+          duration_minutes: Number(document.getElementById('appt-duration').value) || 60,
+          mode: document.getElementById('appt-mode').value,
+          location: document.getElementById('appt-location').value.trim() || null,
+          notes: document.getElementById('appt-notes').value.trim() || null,
+          created_by: session.user.id,
+        }).then(function (result) {
+          if (result.error) {
+            window.setStatus(apptStatus, result.error.message, 'error');
+            return;
+          }
+          window.setStatus(apptStatus, t('Appointment scheduled.', 'Wizyta zaplanowana.'), 'success');
+          apptForm.reset();
+          document.getElementById('appt-duration').value = 60;
+          refreshClientAppointments();
+          refreshAllAppointments();
+        });
       });
 
       // Bound once. The selected client is read from the picker at submit
@@ -722,7 +1052,8 @@
       });
 
       rerender = function () {
-        if (picker.value) { refreshConsultations(); refreshDocs(); }
+        refreshAllAppointments(); // renders whether or not a client is picked
+        if (picker.value) { refreshClientAppointments(); refreshConsultations(); refreshDocs(); }
       };
     }
 
