@@ -1,6 +1,11 @@
-require('dotenv').config();
-
 const path = require('path');
+
+// Local dev keeps its secrets in server/.env; resolve it relative to this
+// file so `npm start` works from the repo root. In production (Railway)
+// there is no .env file and the platform supplies these as real env vars,
+// so this call simply finds nothing and falls through.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -39,6 +44,17 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 const app = express();
 app.disable('x-powered-by');
+
+// Railway (and most hosts) put the app behind a reverse proxy, so the
+// socket address is the proxy's. Trusting one hop lets express-rate-limit
+// key on the real client IP via X-Forwarded-For — without this, every
+// visitor shares a single bucket and one person can rate-limit everyone.
+// Only enabled in production: trusting the header locally would let a
+// client spoof its own IP and bypass the limiter.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(express.json({ limit: '20kb' }));
 
 const corsOptions = {
