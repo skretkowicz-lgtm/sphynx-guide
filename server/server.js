@@ -61,7 +61,9 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  `connect-src 'self' ${SUPABASE_ORIGIN}`,
+  // api.pwnedpasswords.com receives only the first 5 characters of a
+  // password's SHA-1 hash (k-anonymity), never the password itself.
+  `connect-src 'self' ${SUPABASE_ORIGIN} https://api.pwnedpasswords.com`,
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",

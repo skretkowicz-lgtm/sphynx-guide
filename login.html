@@ -185,6 +185,11 @@
   .privacy-note { margin: 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; }
   [data-mode="signin"] #signup-privacy { display: none; }
 
+  /* The password rules apply to new passwords only, so the hint is hidden
+     when signing in with an existing one. */
+  .hint { font-size: 0.75rem; color: var(--ink-soft); line-height: 1.45; }
+  [data-mode="signin"] #password-hint { display: none; }
+
   .status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
   .status--error { color: var(--danger); }
   .status--success { color: var(--focus); }
@@ -258,7 +263,13 @@
           <span lang="en">Password</span>
           <span lang="pl">Hasło</span>
         </label>
+        <!-- minlength stays at 6 so existing accounts can still sign in;
+             the 12-character rule is applied to sign-up only, in JS. -->
         <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6">
+        <span class="hint" id="password-hint">
+          <span lang="en">At least 12 characters. Checked against known data breaches.</span>
+          <span lang="pl">Co najmniej 12 znaków. Hasło jest sprawdzane w bazie wycieków danych.</span>
+        </span>
       </div>
       <button class="submit" type="submit" id="submit-btn">
         <span id="submit-signin">
@@ -327,6 +338,42 @@
       if (result.data.session) window.location.href = 'profile.html';
     });
 
+    var MIN_PASSWORD_LENGTH = 12;
+
+    // Checks a password against the Have I Been Pwned breach corpus using
+    // their k-anonymity range API: the password is hashed locally with
+    // SHA-1 and only the first five hex characters of that hash are sent.
+    // The service returns every suffix sharing that prefix and the match
+    // is made here, so neither the password nor its full hash ever leaves
+    // the browser.
+    //
+    // Resolves false on any failure — a breach lookup being unavailable
+    // must never stop someone creating an account. This is advisory: it
+    // protects people from reusing a known-compromised password, and is
+    // not a control against a determined attacker, who could call the
+    // signup API directly.
+    function isPasswordBreached(password) {
+      if (!window.crypto || !window.crypto.subtle) return Promise.resolve(false);
+      return window.crypto.subtle
+        .digest('SHA-1', new TextEncoder().encode(password))
+        .then(function (buf) {
+          var hash = Array.prototype.map
+            .call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, '0'); })
+            .join('')
+            .toUpperCase();
+          var prefix = hash.slice(0, 5);
+          var suffix = hash.slice(5);
+          return fetch('https://api.pwnedpasswords.com/range/' + prefix)
+            .then(function (res) { return res.ok ? res.text() : ''; })
+            .then(function (body) {
+              return body.split('\n').some(function (line) {
+                return line.split(':')[0].trim() === suffix;
+              });
+            });
+        })
+        .catch(function () { return false; });
+    }
+
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       var email = document.getElementById('email').value.trim();
@@ -337,14 +384,40 @@
       setStatus('');
 
       if (isSignup()) {
-        window.sb.auth.signUp({
-          email: email,
-          password: password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin + window.location.pathname.replace(/[^/]*$/, 'login.html'),
-          },
+        if (password.length < MIN_PASSWORD_LENGTH) {
+          submitBtn.disabled = false;
+          setStatus(
+            window.isPl()
+              ? 'Hasło musi mieć co najmniej ' + MIN_PASSWORD_LENGTH + ' znaków.'
+              : 'Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters.',
+            'error'
+          );
+          return;
+        }
+
+        setStatus(window.isPl() ? 'Sprawdzanie hasła…' : 'Checking password…');
+
+        isPasswordBreached(password).then(function (breached) {
+          if (breached) {
+            submitBtn.disabled = false;
+            setStatus(
+              window.isPl()
+                ? 'To hasło pojawiło się w znanym wycieku danych. Wybierz inne.'
+                : 'This password has appeared in a known data breach. Please choose another.',
+              'error'
+            );
+            return null;
+          }
+          return window.sb.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+              data: { full_name: fullName },
+              emailRedirectTo: window.location.origin + window.location.pathname.replace(/[^/]*$/, 'login.html'),
+            },
+          });
         }).then(function (result) {
+          if (!result) return; // rejected before signing up
           submitBtn.disabled = false;
           if (result.error) {
             setStatus(result.error.message, 'error');
