@@ -51,6 +51,37 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
+// Hardening headers. The CSP still needs 'unsafe-inline' because the pages
+// carry inline <style>/<script> blocks; it nonetheless pins where scripts,
+// connections and form posts may go, and forbids framing entirely.
+const SUPABASE_ORIGIN = new URL(process.env.SUPABASE_URL).origin;
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self' ${SUPABASE_ORIGIN}`,
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join('; ');
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  // Only meaningful over TLS, and Railway terminates TLS for us. No
+  // `preload` — that is effectively irreversible once submitted.
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '20kb' }));
 
 const corsOptions = {
@@ -71,6 +102,16 @@ function stripControlChars(value) {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// An RFC 5322 display-name must be quoted, and cannot contain a bare < or >.
+// Interpolating a raw name produced addresses like `<script>x</script>
+// <a@b.com>`, which the mail API rejects — so any visitor whose name held an
+// angle bracket silently lost their message. Quote it and drop the
+// characters that break the grammar even inside quotes.
+function formatReplyTo(name, email) {
+  const display = name.replace(/[\\"<>]/g, '').trim();
+  return display ? `"${display}" <${email}>` : email;
+}
 
 app.options('/api/contact', cors(corsOptions));
 
@@ -123,7 +164,7 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
   const mailed = resend.emails.send({
     from: process.env.MAIL_FROM,
     to: process.env.CONTACT_TO,
-    replyTo: `${name} <${email}>`,
+    replyTo: formatReplyTo(name, email),
     subject: `Sphynx guide contact form — ${name}`,
     text: lines.join('\n'),
   }).then(({ error }) => error || null, (err) => err);
@@ -150,6 +191,11 @@ app.use('/images', express.static(path.join(PROJECT_ROOT, 'images'), staticOptio
 app.use((err, req, res, next) => {
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ ok: false, error: 'Invalid request body.' });
+  }
+  // Oversized bodies are a client error; returning 500 wrongly implied the
+  // server had broken.
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ ok: false, error: 'Your message is too long.' });
   }
   console.error(err);
   res.status(500).json({ ok: false, error: 'Unexpected server error.' });
