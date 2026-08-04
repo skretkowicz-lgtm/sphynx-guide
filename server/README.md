@@ -111,6 +111,39 @@ user would lock out everyone else.
   language the page was in, with `replyTo` pointing back at `CONTACT_TO`.
   Its failure is logged but never fails the request: the message has still
   reached you, so reporting an error to the visitor would be a lie.
+- Emails the client when an appointment is created, cancelled or reinstated,
+  via `POST /api/notify/appointment` (see below).
+
+## `POST /api/notify/appointment`
+
+Appointments are written from the browser straight to Supabase under RLS,
+but the Resend key lives on the server and must stay there — so the browser
+asks this endpoint to do the telling.
+
+The request body carries **only** `{ appointment_id, event }`. Who the client
+is, their address and the session times are all read here from the database,
+so a caller cannot direct a message at someone else. The worst a stolen
+behaviourist token achieves is re-sending a genuine notification to the
+genuine client.
+
+- Requires `Authorization: Bearer <supabase access token>`. The token is
+  validated against the auth server, not merely decoded, and the
+  `behaviourist` role is read from `profiles` rather than trusted from the
+  token's claims.
+- `event` is one of `created`, `cancelled`, `reinstated`. There is no
+  `no_show`: that is a note to self about a session that already failed to
+  happen, and mailing someone about it would be a reproach.
+- Appointments in the past are skipped — `{ ok: true, sent: false, reason:
+  "past" }`. That is not an error; the status change itself succeeded.
+- Mail is bilingual. `profiles` has no language column, and for "your session
+  has moved" a wrong guess is worse than a long email.
+
+**Known limitation.** The browser sends the notification after its own write
+succeeds, so if the tab dies in between, the appointment exists and no email
+goes out. `profile.html` therefore states explicitly whether the client was
+emailed, rather than implying it. Moving to a Supabase database webhook would
+close the gap, at the cost of needing a publicly reachable URL — which cannot
+be tested on localhost.
 - Sends plain text only (no HTML), so nothing a visitor types can inject
   markup or scripts into the email.
 - Mounts only the pages, `js/` and `images/`, so `server/`, `sql/` and

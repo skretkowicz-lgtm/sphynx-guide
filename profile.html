@@ -1010,6 +1010,57 @@
         });
     }
 
+    // Mail is sent by the server, which holds the Resend key — a key the
+    // browser must never see. Only the appointment id is sent: the server
+    // reads the client, the address and the times itself, so nothing here
+    // can decide who gets told what.
+    //
+    // Resolves to the server's answer, or { ok: false } if the request never
+    // landed. Never rejects: a notification failing must not take the
+    // surrounding save down with it.
+    function notifyAppointment(id, event) {
+      return window.sb.auth.getSession().then(function (result) {
+        var session = result.data && result.data.session;
+        if (!session) return { ok: false };
+        return fetch('/api/notify/appointment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Read fresh rather than reusing the session captured at boot,
+            // which may since have been refreshed out from under us.
+            Authorization: 'Bearer ' + session.access_token,
+          },
+          body: JSON.stringify({ appointment_id: id, event: event }),
+        }).then(function (res) {
+          return res.json().catch(function () { return { ok: false }; });
+        }, function () {
+          return { ok: false };
+        });
+      }, function () { return { ok: false }; });
+    }
+
+    // Says what actually happened. The alternative — staying silent — would
+    // replace a manual step she knows she has to do with an invisible one
+    // she only finds out about when a client misses a session.
+    function reportNotification(statusEl, savedEn, savedPl, answer) {
+      if (answer && answer.ok && answer.sent) {
+        window.setStatus(statusEl,
+          t(savedEn + ' The client has been emailed.', savedPl + ' Klient został powiadomiony e-mailem.'),
+          'success');
+        return;
+      }
+      // ok-but-not-sent is a deliberate skip (a past date, an account with
+      // no address), not a failure — so it must not read like one.
+      if (answer && answer.ok) {
+        window.setStatus(statusEl, t(savedEn, savedPl), 'success');
+        return;
+      }
+      window.setStatus(statusEl,
+        t(savedEn + ' The email to the client did NOT go out — please tell them yourself.',
+          savedPl + ' E-mail do klienta NIE został wysłany — powiadom klienta samodzielnie.'),
+        'error');
+    }
+
     function updateAppointmentStatus(id, status, afterwards) {
       // .select() matters: without it supabase-js sends Prefer:
       // return=minimal and resolves { data: null, error: null } for BOTH a
@@ -1021,6 +1072,21 @@
             return;
           }
           afterwards();
+
+          // Cancelling and reinstating are both news the client needs.
+          // A no-show is not: it is a note to self about a session that has
+          // already failed to happen.
+          var event = status === 'cancelled' ? 'cancelled'
+            : status === 'scheduled' ? 'reinstated' : null;
+          if (!event) return;
+
+          notifyAppointment(id, event).then(function (answer) {
+            if (answer && answer.ok) return;
+            alert(t(
+              'The appointment was updated, but the email to the client did not go out. Please tell them yourself.',
+              'Wizyta została zaktualizowana, ale e-mail do klienta nie został wysłany. Powiadom klienta samodzielnie.'
+            ));
+          });
         });
     }
 
@@ -1318,7 +1384,9 @@
           location: document.getElementById('appt-location').value.trim() || null,
           notes: document.getElementById('appt-notes').value.trim() || null,
           created_by: session.user.id,
-        }).then(function (result) {
+          // .select() so the new row's id comes back — the notification
+          // needs something to point at.
+        }).select().then(function (result) {
           if (result.error) {
             window.setStatus(apptStatus, result.error.message, 'error');
             return;
@@ -1328,6 +1396,13 @@
           document.getElementById('appt-duration').value = 60;
           refreshClientAppointments();
           refreshAllAppointments();
+
+          var created = (result.data || [])[0];
+          if (!created) return;
+          notifyAppointment(created.id, 'created').then(function (answer) {
+            reportNotification(apptStatus,
+              'Appointment scheduled.', 'Wizyta zaplanowana.', answer);
+          });
         });
       });
 
