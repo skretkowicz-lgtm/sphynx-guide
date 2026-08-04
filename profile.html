@@ -171,6 +171,17 @@
   }
 
   .tz-note { margin: 0.75rem 0 0; font-size: 0.75rem; color: var(--ink-soft); font-style: italic; }
+
+  /* Reads the chosen date back in words. A datetime-local input renders in
+     the BROWSER's locale and no page can override that, so on a US-locale
+     machine "08/09" gives no way to tell 8 September from 9 August. A named
+     weekday and month are unambiguous everywhere. */
+  .date-echo {
+    font-size: 0.82rem;
+    color: var(--accent);
+    font-weight: 600;
+    min-height: 1.2em;
+  }
   .consult-item .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
   .consult-item .meta a { word-break: break-all; }
 
@@ -445,6 +456,7 @@
               <div class="field">
                 <label for="appt-date"><span lang="en">Date &amp; time</span><span lang="pl">Data i godzina</span></label>
                 <input type="datetime-local" id="appt-date" required>
+                <span class="date-echo" id="appt-date-echo" role="status" aria-live="polite"></span>
                 <span class="hint">
                   <span lang="en">Warsaw time (Europe/Warsaw).</span>
                   <span lang="pl">Czas warszawski (Europa/Warszawa).</span>
@@ -503,6 +515,7 @@
               <div class="field">
                 <label for="consult-date"><span lang="en">Date &amp; time</span><span lang="pl">Data i godzina</span></label>
                 <input type="datetime-local" id="consult-date" required>
+                <span class="date-echo" id="consult-date-echo" role="status" aria-live="polite"></span>
               </div>
               <div class="field">
                 <label for="consult-mode"><span lang="en">Mode</span><span lang="pl">Forma</span></label>
@@ -583,6 +596,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/lang.js"></script>
 <script src="js/site.js"></script>
 <script>
   (function () {
@@ -699,6 +713,40 @@
       } catch (e) {
         return iso;
       }
+    }
+
+    // Same zone as fmtDateTime, but spelling out the weekday and month. Used
+    // only to confirm a date being ENTERED, where numeric formats are the
+    // whole problem.
+    function fmtDateTimeLong(iso) {
+      try {
+        return new Date(iso).toLocaleString(t('en-GB', 'pl-PL'), {
+          dateStyle: 'full', timeStyle: 'short', timeZone: PRACTICE_TZ,
+        });
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    // Reads a datetime-local field back in words as it is typed.
+    //
+    // The value is parsed as local time and rendered in Warsaw time, which
+    // is exactly what gets stored — so on a device in another zone this
+    // shows the shift rather than hiding it, making the tz-warning next to
+    // it concrete instead of theoretical.
+    //
+    // Returns its own updater: .reset() fires neither input nor change, so
+    // the caller has to clear the echo itself after submitting.
+    function bindDateEcho(input, echo) {
+      function update() {
+        var parsed = input.value ? new Date(input.value) : null;
+        echo.textContent = (parsed && !isNaN(parsed.getTime()))
+          ? fmtDateTimeLong(parsed.toISOString())
+          : '';
+      }
+      input.addEventListener('input', update);
+      input.addEventListener('change', update);
+      return update;
     }
 
     function sanitizeFilename(name) {
@@ -1359,6 +1407,11 @@
         buildUploadForm(document.getElementById('beh-upload'), picker.value, refreshDocs);
       });
 
+      var updateApptEcho = bindDateEcho(
+        document.getElementById('appt-date'), document.getElementById('appt-date-echo'));
+      var updateConsultEcho = bindDateEcho(
+        document.getElementById('consult-date'), document.getElementById('consult-date-echo'));
+
       // datetime-local is naive-local: a browser set to another zone would
       // silently shift every appointment created from it.
       if (Intl.DateTimeFormat().resolvedOptions().timeZone !== PRACTICE_TZ) {
@@ -1393,6 +1446,7 @@
           }
           window.setStatus(apptStatus, t('Appointment scheduled.', 'Wizyta zaplanowana.'), 'success');
           apptForm.reset();
+          updateApptEcho();
           document.getElementById('appt-duration').value = 60;
           refreshClientAppointments();
           refreshAllAppointments();
@@ -1427,11 +1481,14 @@
           }
           window.setStatus(consultStatus, t('Consultation saved.', 'Zapisano konsultację.'), 'success');
           consultForm.reset();
+          updateConsultEcho();
           refreshConsultations();
         });
       });
 
       rerender = function () {
+        updateApptEcho();    // a half-typed date should follow the language too
+        updateConsultEcho();
         renderLeads(); // from the rows already held, so no refetch
         refreshAllAppointments(); // renders whether or not a client is picked
         if (picker.value) { refreshClientAppointments(); refreshConsultations(); refreshDocs(); }
