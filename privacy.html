@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy — Canadian Sphynx Guide / Polityka Prywatności</title>
 <style>
   :root {
@@ -66,6 +68,10 @@
   li[lang] { display: none; }
   :root[data-lang="en"] li[lang="en"] { display: list-item; }
   :root[data-lang="pl"] li[lang="pl"] { display: list-item; }
+  /* The generic rule above sets display:inline, which would strip these of
+     their table formatting — and with it min-width and the scroll wrapper. */
+  :root[data-lang="en"] table[lang="en"],
+  :root[data-lang="pl"] table[lang="pl"] { display: table; }
 
   a { color: var(--accent); }
 
@@ -133,6 +139,17 @@
     margin: 0 auto;
   }
   footer.site p { color: var(--ink-soft); font-size: 0.82rem; max-width: 60ch; margin: 0 0 0.5rem; }
+
+  @media (max-width: 640px) {
+    header.site { padding: 0.75rem 1rem; }
+    main { padding: 1.75rem 1rem 3rem; }
+    h1 { font-size: 1.65rem; }
+    footer.site { padding-left: 1rem; padding-right: 1rem; }
+    /* Legal tables stay tabular and scroll inside their own wrapper rather
+       than forcing the whole page sideways. */
+    table { min-width: 380px; font-size: 0.85rem; }
+    th, td { padding: 0.45rem 0.55rem; }
+  }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>

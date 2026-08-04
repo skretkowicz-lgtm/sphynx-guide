@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Profile — Canadian Sphynx Guide / Mój Profil</title>
 <style>
   :root {
@@ -250,6 +252,24 @@
   @media (max-width: 640px) {
     .field-row { grid-template-columns: 1fr; }
     .consult-item, .doc-item { flex-direction: column; }
+    /* Once the row stacks, the badges should read left-to-right under the
+       detail rather than staying right-aligned in a column. */
+    .badge-group { flex-direction: row; align-items: center; flex-wrap: wrap; align-self: flex-start; }
+
+    header.site { padding: 0.75rem 1rem; gap: 0.6rem; }
+    .brand { font-size: 0.95rem; min-width: 0; }
+    .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-controls { gap: 0.5rem; flex: none; }
+    button.link-btn { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
+
+    main { padding: 1.5rem 1rem 3rem; }
+    section.panel { padding: 1.1rem; }
+    h1 { font-size: 1.6rem; }
+    section.panel h2 { font-size: 1.1rem; }
+
+    /* 16px stops iOS zooming the page when a field takes focus. */
+    .field input, .field textarea, .field select, select.client-picker { font-size: 16px; }
+    button.submit { width: 100%; justify-self: stretch; text-align: center; }
   }
 
   @media (prefers-reduced-motion: reduce) {
