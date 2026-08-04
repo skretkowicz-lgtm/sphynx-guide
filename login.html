@@ -183,27 +183,61 @@
   }
   .toggle-mode button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-  /* Only shown in signup mode — signing in collects nothing new. */
+  /* Only shown in signup mode — no other mode collects anything new. */
   .privacy-note { margin: 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; }
-  [data-mode="signin"] #signup-privacy { display: none; }
 
-  /* The password rules apply to new passwords only, so the hint is hidden
-     when signing in with an existing one. */
   .hint { font-size: 0.75rem; color: var(--ink-soft); line-height: 1.45; }
-  [data-mode="signin"] #password-hint { display: none; }
 
   .status { margin: 0; font-size: 0.85rem; min-height: 1.1em; }
   .status--error { color: var(--danger); }
   .status--success { color: var(--focus); }
 
-  #signup-only { display: none; }
+  /* ---- the four modes ----
+     One card, four states: signin, signup, reset-request, new-password.
+     Anything that belongs to exactly one mode is hidden by default and
+     switched on for its own mode, so adding a fifth would mean adding
+     rules rather than remembering to hide things in three places. */
+  #signup-only,
+  #signin-title, #signup-title, #reset-title, #newpw-title,
+  #signin-lede, #signup-lede, #reset-lede, #newpw-lede,
+  #submit-signin, #submit-signup, #submit-reset, #submit-newpw,
+  #toggle-to-signup, #toggle-to-signin, #forgot-password, #signup-privacy {
+    display: none;
+  }
+
   [data-mode="signup"] #signup-only { display: grid; }
-  [data-mode="signup"] #signin-title { display: none; }
-  [data-mode="signin"] #signup-title { display: none; }
-  [data-mode="signup"] #toggle-to-signup { display: none; }
-  [data-mode="signin"] #toggle-to-signin { display: none; }
-  [data-mode="signup"] #submit-signin { display: none; }
-  [data-mode="signin"] #submit-signup { display: none; }
+
+  [data-mode="signin"] #signin-title,
+  [data-mode="signup"] #signup-title,
+  [data-mode="reset-request"] #reset-title,
+  [data-mode="new-password"] #newpw-title,
+  [data-mode="signin"] #signin-lede,
+  [data-mode="signup"] #signup-lede,
+  [data-mode="reset-request"] #reset-lede,
+  [data-mode="new-password"] #newpw-lede,
+  [data-mode="signin"] #submit-signin,
+  [data-mode="signup"] #submit-signup,
+  [data-mode="reset-request"] #submit-reset,
+  [data-mode="new-password"] #submit-newpw,
+  [data-mode="signin"] #toggle-to-signup,
+  [data-mode="signin"] #forgot-password,
+  [data-mode="signup"] #signup-privacy {
+    display: revert;
+  }
+
+  /* Reachable from both places you can get stuck. */
+  [data-mode="signup"] #toggle-to-signin,
+  [data-mode="reset-request"] #toggle-to-signin { display: revert; }
+  [data-mode="reset-request"] #have-account { display: none; }
+
+  /* Asking for a reset link needs no password; setting a new one needs no
+     email, because the link already established who is asking. */
+  [data-mode="reset-request"] #password-field { display: none; }
+  [data-mode="new-password"] #email-field { display: none; }
+
+  /* The length and breach rules apply to new passwords only. */
+  [data-mode="signin"] #password-hint,
+  [data-mode="reset-request"] #password-hint { display: none; }
 
   @media (max-width: 480px) {
     header.site { padding: 0.75rem 1rem; }
@@ -253,8 +287,31 @@
       <span lang="en">Create Account</span>
       <span lang="pl">Załóż konto</span>
     </h1>
-    <p class="lede" lang="en">Sign in to see your consultation history and documents.</p>
-    <p class="lede" lang="pl">Zaloguj się, aby zobaczyć historię konsultacji i dokumenty.</p>
+    <h1 id="reset-title">
+      <span lang="en">Reset Password</span>
+      <span lang="pl">Zresetuj hasło</span>
+    </h1>
+    <h1 id="newpw-title">
+      <span lang="en">Choose a New Password</span>
+      <span lang="pl">Wybierz nowe hasło</span>
+    </h1>
+
+    <p class="lede" id="signin-lede">
+      <span lang="en">Sign in to see your consultation history and documents.</span>
+      <span lang="pl">Zaloguj się, aby zobaczyć historię konsultacji i dokumenty.</span>
+    </p>
+    <p class="lede" id="signup-lede">
+      <span lang="en">Sign in to see your consultation history and documents.</span>
+      <span lang="pl">Zaloguj się, aby zobaczyć historię konsultacji i dokumenty.</span>
+    </p>
+    <p class="lede" id="reset-lede">
+      <span lang="en">Enter your email address and we'll send you a link to set a new password.</span>
+      <span lang="pl">Podaj swój adres e-mail, a wyślemy Ci link do ustawienia nowego hasła.</span>
+    </p>
+    <p class="lede" id="newpw-lede">
+      <span lang="en">Almost done — choose a new password for your account.</span>
+      <span lang="pl">Już prawie — wybierz nowe hasło do swojego konta.</span>
+    </p>
 
     <form id="auth-form" novalidate>
       <div class="field" id="signup-only">
@@ -264,14 +321,14 @@
         </label>
         <input id="full_name" name="full_name" type="text" autocomplete="name">
       </div>
-      <div class="field">
+      <div class="field" id="email-field">
         <label for="email">
           <span lang="en">Email</span>
           <span lang="pl">Adres e-mail</span>
         </label>
         <input id="email" name="email" type="email" autocomplete="email" required>
       </div>
-      <div class="field">
+      <div class="field" id="password-field">
         <label for="password">
           <span lang="en">Password</span>
           <span lang="pl">Hasło</span>
@@ -293,6 +350,14 @@
           <span lang="en">Sign Up</span>
           <span lang="pl">Zarejestruj się</span>
         </span>
+        <span id="submit-reset">
+          <span lang="en">Send Reset Link</span>
+          <span lang="pl">Wyślij link</span>
+        </span>
+        <span id="submit-newpw">
+          <span lang="en">Save New Password</span>
+          <span lang="pl">Zapisz nowe hasło</span>
+        </span>
       </button>
       <p class="status" id="status" role="status" aria-live="polite"></p>
       <p class="privacy-note" id="signup-privacy">
@@ -311,11 +376,21 @@
         </button>
       </span>
       <span id="toggle-to-signin">
-        <span lang="en">Already have an account?</span>
-        <span lang="pl">Masz już konto?</span>
+        <!-- Only meaningful coming from signup. Someone resetting a password
+             plainly has an account, so asking is faintly absurd. -->
+        <span id="have-account">
+          <span lang="en">Already have an account?</span>
+          <span lang="pl">Masz już konto?</span>
+        </span>
         <button type="button" id="btn-show-signin">
           <span lang="en">Sign in</span>
           <span lang="pl">Zaloguj się</span>
+        </button>
+      </span>
+      <span id="forgot-password">
+        <button type="button" id="btn-show-reset">
+          <span lang="en">Forgot your password?</span>
+          <span lang="pl">Nie pamiętasz hasła?</span>
         </button>
       </span>
     </p>
@@ -332,26 +407,82 @@
     var status = document.getElementById('status');
     var submitBtn = document.getElementById('submit-btn');
 
-    function isSignup() { return card.getAttribute('data-mode') === 'signup'; }
+    var passwordInput = document.getElementById('password');
+    var emailInput = document.getElementById('email');
+
+    function mode() { return card.getAttribute('data-mode'); }
+
+    function t(en, pl) { return window.isPl() ? pl : en; }
 
     function setStatus(text, kind) { window.setStatus(status, text, kind); }
 
-    // Which submit label and which fields show is driven entirely by the
-    // [data-mode] CSS rules, so the mode lives in exactly one place.
-    function setMode(mode) {
-      card.setAttribute('data-mode', mode);
+    // Which title, lede, fields and submit label show is driven entirely by
+    // the [data-mode] CSS rules, so the mode lives in exactly one place.
+    function setMode(next) {
+      card.setAttribute('data-mode', next);
       setStatus('');
+      // A password manager offers to SAVE a password only when told it is a
+      // new one, and to fill the stored one only when told it is current.
+      passwordInput.setAttribute(
+        'autocomplete', next === 'signin' ? 'current-password' : 'new-password');
     }
 
     document.getElementById('btn-show-signup').addEventListener('click', function () { setMode('signup'); });
     document.getElementById('btn-show-signin').addEventListener('click', function () { setMode('signin'); });
+    document.getElementById('btn-show-reset').addEventListener('click', function () { setMode('reset-request'); });
 
-    // If already signed in, skip the login page entirely.
-    window.sb.auth.getSession().then(function (result) {
-      if (result.data.session) window.location.href = 'profile.html';
+    // A recovery link arrives in one of two shapes, depending on which email
+    // template the Supabase project is configured with: either tokens in the
+    // URL fragment, which supabase-js consumes itself and announces as a
+    // PASSWORD_RECOVERY event, or a ?token_hash= that has to be exchanged
+    // explicitly. Both are handled — which one arrives is a dashboard
+    // setting this page cannot see.
+    var query = new URLSearchParams(window.location.search);
+    var fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    var isRecovery = query.get('type') === 'recovery' || fragment.get('type') === 'recovery';
+    var tokenHash = query.get('token_hash');
+
+    // A token left in the address bar goes into history, and into any
+    // screenshot of the page taken while asking someone for help.
+    function scrubUrl() {
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    if (isRecovery) {
+      // Deliberately ahead of the signed-in redirect below. A recovery link
+      // establishes a real session, so that shortcut would otherwise fire
+      // and carry the user straight past the one screen the link exists for.
+      setMode('new-password');
+      if (tokenHash) {
+        window.sb.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash }).then(function (result) {
+          scrubUrl();
+          if (result.error) {
+            setStatus(t(
+              'This reset link is invalid or has expired. Please request a new one.',
+              'Ten link jest nieprawidłowy lub wygasł. Poproś o nowy.'
+            ), 'error');
+          }
+        });
+      } else {
+        scrubUrl();
+      }
+    } else {
+      // If already signed in, skip the login page entirely.
+      window.sb.auth.getSession().then(function (result) {
+        if (result.data.session) window.location.href = 'profile.html';
+      });
+    }
+
+    // Covers the fragment-token shape, which supabase-js parses on its own
+    // schedule rather than by the time the code above runs.
+    window.sb.auth.onAuthStateChange(function (event) {
+      if (event === 'PASSWORD_RECOVERY') setMode('new-password');
     });
 
     var MIN_PASSWORD_LENGTH = 12;
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Checks a password against the Have I Been Pwned breach corpus using
     // their k-anonymity range API: the password is hashed locally with
@@ -387,72 +518,129 @@
         .catch(function () { return false; });
     }
 
+    // Where the browser should land after following an emailed link. Derived
+    // from the current location so it follows the deployment rather than
+    // being pinned to one hostname. The Supabase project's Redirect URLs
+    // allowlist has to contain it, or the link refuses to come back here.
+    function linkTarget() {
+      return window.location.origin + window.location.pathname.replace(/[^/]*$/, 'login.html');
+    }
+
+    // The rules that apply to any password being SET, shared by signup and
+    // recovery — the two places a new one is chosen. Resolves to a message
+    // to show, or null when the password is acceptable. Length is checked
+    // first: no point calling out to pwnedpasswords for one already
+    // rejected.
+    function passwordProblem(password) {
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        return Promise.resolve(t(
+          'Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters.',
+          'Hasło musi mieć co najmniej ' + MIN_PASSWORD_LENGTH + ' znaków.'
+        ));
+      }
+      setStatus(t('Checking password…', 'Sprawdzanie hasła…'));
+      return isPasswordBreached(password).then(function (breached) {
+        return breached ? t(
+          'This password has appeared in a known data breach. Please choose another.',
+          'To hasło pojawiło się w znanym wycieku danych. Wybierz inne.'
+        ) : null;
+      });
+    }
+
+    function handleSignup(email, password, fullName) {
+      passwordProblem(password).then(function (problem) {
+        if (problem) {
+          submitBtn.disabled = false;
+          setStatus(problem, 'error');
+          return null;
+        }
+        return window.sb.auth.signUp({
+          email: email,
+          password: password,
+          options: { data: { full_name: fullName }, emailRedirectTo: linkTarget() },
+        });
+      }).then(function (result) {
+        if (!result) return; // rejected before signing up
+        submitBtn.disabled = false;
+        if (result.error) {
+          setStatus(result.error.message, 'error');
+          return;
+        }
+        setStatus(t(
+          'Check your email to confirm your account, then sign in.',
+          'Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto, a następnie się zaloguj.'
+        ), 'success');
+      });
+    }
+
+    function handleSignin(email, password) {
+      window.sb.auth.signInWithPassword({ email: email, password: password }).then(function (result) {
+        submitBtn.disabled = false;
+        if (result.error) {
+          setStatus(result.error.message, 'error');
+          return;
+        }
+        window.location.href = 'profile.html';
+      });
+    }
+
+    function handleResetRequest(email) {
+      if (!EMAIL_RE.test(email)) {
+        submitBtn.disabled = false;
+        setStatus(t('Please enter a valid email address.', 'Podaj prawidłowy adres e-mail.'), 'error');
+        return;
+      }
+      // The same answer either way, and on failure too. Anything else turns
+      // this form into a way of testing which addresses hold an account with
+      // a behaviourist — which is itself sensitive. The cost is that a
+      // genuine network failure also reads as success; leaking the account
+      // list is the worse of the two.
+      function answer() {
+        submitBtn.disabled = false;
+        setStatus(t(
+          'If that address has an account, a reset link is on its way. Check your inbox, and your spam folder.',
+          'Jeśli ten adres ma konto, link do zresetowania hasła jest już w drodze. Sprawdź skrzynkę oraz folder spam.'
+        ), 'success');
+      }
+      window.sb.auth.resetPasswordForEmail(email, { redirectTo: linkTarget() }).then(answer, answer);
+    }
+
+    function handleNewPassword(password) {
+      passwordProblem(password).then(function (problem) {
+        if (problem) {
+          submitBtn.disabled = false;
+          setStatus(problem, 'error');
+          return null;
+        }
+        return window.sb.auth.updateUser({ password: password });
+      }).then(function (result) {
+        if (!result) return;
+        submitBtn.disabled = false;
+        if (result.error) {
+          setStatus(result.error.message, 'error');
+          return;
+        }
+        // Straight through to the profile rather than back to sign in: the
+        // recovery link already established the session, so asking them to
+        // type the password they just chose would be theatre.
+        window.location.href = 'profile.html';
+      });
+    }
+
     form.addEventListener('submit', function (event) {
       event.preventDefault();
-      var email = document.getElementById('email').value.trim();
-      var password = document.getElementById('password').value;
+      var email = emailInput.value.trim();
+      var password = passwordInput.value;
       var fullName = document.getElementById('full_name').value.trim();
+      var current = mode();
 
       submitBtn.disabled = true;
       setStatus('');
 
-      if (isSignup()) {
-        if (password.length < MIN_PASSWORD_LENGTH) {
-          submitBtn.disabled = false;
-          setStatus(
-            window.isPl()
-              ? 'Hasło musi mieć co najmniej ' + MIN_PASSWORD_LENGTH + ' znaków.'
-              : 'Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters.',
-            'error'
-          );
-          return;
-        }
-
-        setStatus(window.isPl() ? 'Sprawdzanie hasła…' : 'Checking password…');
-
-        isPasswordBreached(password).then(function (breached) {
-          if (breached) {
-            submitBtn.disabled = false;
-            setStatus(
-              window.isPl()
-                ? 'To hasło pojawiło się w znanym wycieku danych. Wybierz inne.'
-                : 'This password has appeared in a known data breach. Please choose another.',
-              'error'
-            );
-            return null;
-          }
-          return window.sb.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-              data: { full_name: fullName },
-              emailRedirectTo: window.location.origin + window.location.pathname.replace(/[^/]*$/, 'login.html'),
-            },
-          });
-        }).then(function (result) {
-          if (!result) return; // rejected before signing up
-          submitBtn.disabled = false;
-          if (result.error) {
-            setStatus(result.error.message, 'error');
-            return;
-          }
-          setStatus(
-            window.isPl()
-              ? 'Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto, a następnie się zaloguj.'
-              : 'Check your email to confirm your account, then sign in.',
-            'success'
-          );
-        });
-      } else {
-        window.sb.auth.signInWithPassword({ email: email, password: password }).then(function (result) {
-          submitBtn.disabled = false;
-          if (result.error) {
-            setStatus(result.error.message, 'error');
-            return;
-          }
-          window.location.href = 'profile.html';
-        });
-      }
+      if (current === 'signup') return handleSignup(email, password, fullName);
+      if (current === 'reset-request') return handleResetRequest(email);
+      if (current === 'new-password') return handleNewPassword(password);
+      return handleSignin(email, password);
     });
   })();
 </script>
