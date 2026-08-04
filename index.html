@@ -760,7 +760,10 @@
         phone: data.get('phone'),
         behaviourist: data.get('behaviourist') === 'yes',
         message: data.get('message'),
-        website: data.get('website')
+        website: data.get('website'),
+        // The one email where the recipient's language is known for
+        // certain, so the confirmation is sent in it rather than in both.
+        lang: currentLang()
       };
 
       submitBtn.disabled = true;

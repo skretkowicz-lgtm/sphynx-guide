@@ -9,16 +9,12 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
+const { createMailer, bilingual, bilingualSubject } = require('./mail');
 
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.join(__dirname, '..');
 
-// Mail goes out over Resend's HTTPS API rather than SMTP. Railway (like
-// most hosts) blocks outbound SMTP ports to deter spam, so a direct
-// smtp.gmail.com connection hangs until it times out. Port 443 always
-// works, and using the same path locally keeps dev and prod identical.
 const REQUIRED_ENV = [
   'RESEND_API_KEY', 'MAIL_FROM', 'CONTACT_TO',
   'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
@@ -30,7 +26,10 @@ if (missingEnv.length) {
   process.exit(1);
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const mailer = createMailer({
+  apiKey: process.env.RESEND_API_KEY,
+  from: process.env.MAIL_FROM,
+});
 
 // Service-role key — full table access, bypasses Row Level Security. Only
 // ever used here, server-side. Never send this key to the browser.
@@ -115,6 +114,65 @@ function formatReplyTo(name, email) {
   return display ? `"${display}" <${email}>` : email;
 }
 
+// Used only to link to the privacy notice from the confirmation email.
+// Deliberately NOT derived from the request's Host header: that is
+// attacker-controlled, and a link in an email we send to a visitor is
+// exactly where a spoofed host would do damage. Empty means the line is
+// simply left out.
+const SITE_URL = process.env.SITE_URL || process.env.ALLOWED_ORIGIN || '';
+
+// Confirms to the visitor that the message arrived, and gives them the copy
+// they would otherwise have no record of — the form clears on submit.
+//
+// This does mean the endpoint delivers visitor-typed text to a
+// visitor-supplied address, which is a modest abuse vector. The honeypot
+// and the 5-per-10-minutes rate limit are the controls; the sender is
+// unambiguously the site, and replies route back to CONTACT_TO rather than
+// to whoever filled the form in.
+function autoreplyBody(lang, name, message, behaviourist) {
+  const privacy = SITE_URL ? `${SITE_URL}/privacy.html` : '';
+  if (lang === 'pl') {
+    return [
+      // No name in the Polish greeting. Polish would need the vocative
+      // ("Panie Janie"), which cannot be derived from a free-text field —
+      // and a nominative full name after "Dzień dobry" reads like a form
+      // letter from an office. A bare greeting is simply correct.
+      'Dzień dobry,',
+      '',
+      'dziękujemy za wiadomość wysłaną przez sphynx.guide. To automatyczne potwierdzenie, że Twoje zapytanie do nas dotarło — nie musisz nic robić.',
+      '',
+      'Zazwyczaj odpowiadamy w ciągu 2 dni roboczych.',
+      behaviourist
+        ? '\nZaznaczono prośbę o konsultację behawiorystyczną, więc w odpowiedzi znajdziesz też informacje o przebiegu konsultacji i dostępnych terminach.'
+        : null,
+      '',
+      'Treść Twojej wiadomości:',
+      '',
+      message,
+      '',
+      'Jeśli chcesz coś dodać, po prostu odpowiedz na tego e-maila.',
+      privacy ? `\nTwoje dane wykorzystujemy wyłącznie do odpowiedzi na to zapytanie i przechowujemy je na terenie UE: ${privacy}` : null,
+    ].filter((line) => line !== null).join('\n');
+  }
+  return [
+    `Hello ${name},`,
+    '',
+    'Thank you for your message via sphynx.guide. This is an automatic confirmation that your enquiry reached us — there is nothing you need to do.',
+    '',
+    'We typically reply within 2 business days.',
+    behaviourist
+      ? '\nYou asked about a behaviourist consultation, so the reply will also cover how a session works and which times are free.'
+      : null,
+    '',
+    'What you sent:',
+    '',
+    message,
+    '',
+    'If you would like to add anything, just reply to this email.',
+    privacy ? `\nYour details are used only to answer this enquiry and are stored in the EU: ${privacy}` : null,
+  ].filter((line) => line !== null).join('\n');
+}
+
 app.options('/api/contact', cors(corsOptions));
 
 app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => {
@@ -131,6 +189,9 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
   const phone = stripControlChars(body.phone).slice(0, 30);
   const message = String(body.message || '').slice(0, 2000).trim();
   const behaviourist = body.behaviourist === true || body.behaviourist === 'yes';
+  // Anything other than the one language we have copy for falls back to
+  // English, rather than being interpolated anywhere.
+  const lang = body.lang === 'pl' ? 'pl' : 'en';
 
   if (!name || !email || !message) {
     return res.status(400).json({ ok: false, error: 'Name, email, and message are required.' });
@@ -161,22 +222,225 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
       console.error('Supabase insert threw:', err.message);
     });
 
-  // Resend reports failures as { error } rather than by rejecting, so
-  // normalise both shapes into one value the caller can check.
-  const mailed = resend.emails.send({
-    from: process.env.MAIL_FROM,
+  const mailed = mailer.send({
     to: process.env.CONTACT_TO,
     replyTo: formatReplyTo(name, email),
     subject: `Sphynx guide contact form — ${name}`,
     text: lines.join('\n'),
-  }).then(({ error }) => error || null, (err) => err);
+  });
 
-  const [, mailError] = await Promise.all([saved, mailed]);
+  // Non-critical by design: if the visitor's copy fails, their message has
+  // still reached the behaviourist, and telling them it failed would be a
+  // lie. Sent concurrently so it costs the visitor no extra waiting.
+  const acknowledged = mailer.sendNonCritical({
+    to: email,
+    replyTo: process.env.CONTACT_TO,
+    subject: lang === 'pl'
+      ? 'Otrzymaliśmy Twoją wiadomość — Przewodnik po Sfinksie'
+      : "We've received your message — Canadian Sphynx Guide",
+    text: autoreplyBody(lang, name, message, behaviourist),
+  }, `autoreply to ${email}`);
+
+  const [, mailError] = await Promise.all([saved, mailed, acknowledged]);
   if (mailError) {
     console.error('Failed to send contact email:', mailError.message || mailError);
     return res.status(502).json({ ok: false, error: 'Could not send your message. Please try again later.' });
   }
   return res.json({ ok: true });
+});
+
+// ---------- appointment notifications ----------
+
+// The practice runs on Warsaw time; profile.html pins the same zone when it
+// renders these. A client abroad reading "18:00" with no zone would simply
+// miss the session.
+const PRACTICE_TZ = 'Europe/Warsaw';
+
+// 'no_show' is absent on purpose: that is bookkeeping about a session that
+// already failed to happen, and mailing someone about it would be a
+// reproach rather than information.
+const APPOINTMENT_EVENTS = ['created', 'cancelled', 'reinstated'];
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const MODE_LABELS = {
+  online: { en: 'Online', pl: 'Online' },
+  in_person: { en: 'In person', pl: 'Stacjonarnie' },
+};
+
+function formatWhen(iso, locale) {
+  return new Date(iso).toLocaleString(locale, {
+    dateStyle: 'full', timeStyle: 'short', timeZone: PRACTICE_TZ,
+  });
+}
+
+// Both languages in one message. profiles has no language column, and for
+// something as consequential as "your session has moved" a wrong guess is
+// far worse than a long email.
+function appointmentEmail(event, appointment) {
+  const profileUrl = SITE_URL ? `${SITE_URL}/profile.html` : '';
+  const detail = (locale, lang) => {
+    const lines = [
+      `  ${lang === 'pl' ? 'Termin' : 'When'}: ${formatWhen(appointment.scheduled_at, locale)} (${lang === 'pl' ? 'czas warszawski' : 'Warsaw time'})`,
+      `  ${lang === 'pl' ? 'Czas trwania' : 'Duration'}: ${appointment.duration_minutes} min`,
+      `  ${lang === 'pl' ? 'Forma' : 'Format'}: ${MODE_LABELS[appointment.mode][lang]}`,
+    ];
+    if (appointment.location) {
+      // The column holds a meeting URL for an online session and a street
+      // address for one in person, so the label follows the mode rather
+      // than offering both and letting the reader work it out.
+      const label = appointment.mode === 'online'
+        ? (lang === 'pl' ? 'Link' : 'Link')
+        : (lang === 'pl' ? 'Adres' : 'Address');
+      lines.push(`  ${label}: ${appointment.location}`);
+    }
+    return lines.join('\n');
+  };
+
+  const en = (opening, closing) => [
+    'Hello,', '', opening, '', detail('en-GB', 'en'),
+    appointment.notes ? `\nHow to prepare:\n${appointment.notes}` : null,
+    profileUrl ? `\nYou can always see your appointments here: ${profileUrl}` : null,
+    '', closing,
+  ].filter((line) => line !== null).join('\n');
+
+  const pl = (opening, closing) => [
+    'Dzień dobry,', '', opening, '', detail('pl-PL', 'pl'),
+    appointment.notes ? `\nJak się przygotować:\n${appointment.notes}` : null,
+    profileUrl ? `\nSwoje wizyty zobaczysz zawsze tutaj: ${profileUrl}` : null,
+    '', closing,
+  ].filter((line) => line !== null).join('\n');
+
+  if (event === 'cancelled') {
+    return {
+      subject: bilingualSubject('Appointment cancelled', 'Wizyta odwołana'),
+      text: bilingual(
+        // Not "if this does not suit you" — it is already off. The only
+        // useful next step is booking another one.
+        en('This consultation has been cancelled and will not take place:',
+          'To arrange another time, just reply to this email.'),
+        pl('Ta konsultacja została odwołana i się nie odbędzie:',
+          'Aby umówić nowy termin, po prostu odpowiedz na tego e-maila.')
+      ),
+    };
+  }
+  if (event === 'reinstated') {
+    return {
+      subject: bilingualSubject('Appointment back on', 'Wizyta znów aktualna'),
+      text: bilingual(
+        en('Good news — this consultation is going ahead after all:',
+          'If this no longer suits you, just reply to this email.'),
+        pl('Dobra wiadomość — ta konsultacja jednak się odbędzie:',
+          'Jeśli ten termin już Ci nie odpowiada, po prostu odpowiedz na tego e-maila.')
+      ),
+    };
+  }
+  return {
+    subject: bilingualSubject('Appointment confirmed', 'Wizyta potwierdzona'),
+    text: bilingual(
+      en('Your consultation is booked:',
+        'If this does not suit you, just reply to this email.'),
+      pl('Twoja konsultacja została zaplanowana:',
+        'Jeśli termin Ci nie odpowiada, po prostu odpowiedz na tego e-maila.')
+    ),
+  };
+}
+
+// Far looser than the contact limiter: the caller is an authenticated
+// behaviourist doing her own admin, not an anonymous visitor.
+const notifyLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests. Please try again later.' },
+});
+
+app.options('/api/notify/appointment', cors(corsOptions));
+
+// Appointments are written from the browser straight to Supabase under RLS,
+// but the Resend key lives here and must stay here. So the browser asks this
+// endpoint to do the telling.
+//
+// The request carries ONLY an appointment id. Every other fact — who the
+// client is, their address, when the session is — is read here from the
+// database. A caller therefore cannot dictate who gets told what, which is
+// the whole security property of this endpoint: the worst a stolen
+// behaviourist token can do is re-send a genuine notification to the
+// genuine client.
+async function handleAppointmentNotification(req, res) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) {
+    return res.status(401).json({ ok: false, error: 'Not signed in.' });
+  }
+
+  // Validates the JWT against the auth server rather than merely decoding
+  // it — an unverified decode would accept anything a caller cared to type.
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData || !userData.user) {
+    return res.status(401).json({ ok: false, error: 'Not signed in.' });
+  }
+
+  // Role comes from the database, never from the token's claims.
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', userData.user.id).single();
+  if (!profile || profile.role !== 'behaviourist') {
+    return res.status(403).json({ ok: false, error: 'Not allowed.' });
+  }
+
+  const body = req.body || {};
+  const event = String(body.event || '');
+  const appointmentId = String(body.appointment_id || '');
+  if (!APPOINTMENT_EVENTS.includes(event) || !UUID_RE.test(appointmentId)) {
+    return res.status(400).json({ ok: false, error: 'Invalid request.' });
+  }
+
+  const { data: appointment } = await supabase
+    .from('appointments').select('*').eq('id', appointmentId).single();
+  if (!appointment) {
+    return res.status(404).json({ ok: false, error: 'Appointment not found.' });
+  }
+
+  // Nothing useful to say about a session that has already been and gone,
+  // and "your appointment is cancelled" about last Tuesday reads as a
+  // mistake. Not an error — the status change itself succeeded.
+  if (new Date(appointment.scheduled_at).getTime() < Date.now()) {
+    return res.json({ ok: true, sent: false, reason: 'past' });
+  }
+
+  const { data: owner } = await supabase
+    .from('profiles').select('email').eq('id', appointment.owner_id).single();
+  if (!owner || !owner.email) {
+    return res.json({ ok: true, sent: false, reason: 'no_email' });
+  }
+
+  const { subject, text } = appointmentEmail(event, appointment);
+  const mailError = await mailer.send({
+    to: owner.email,
+    replyTo: process.env.CONTACT_TO,
+    subject,
+    text,
+  });
+  if (mailError) {
+    console.error('Failed to send appointment notification:', mailError.message || mailError);
+    return res.status(502).json({ ok: false, error: 'Could not email the client.' });
+  }
+  return res.json({ ok: true, sent: true });
+}
+
+// Express 4 does not forward a rejected promise from an async handler to the
+// error middleware. Without this catch, a Supabase call that rejects — the
+// project unreachable, DNS momentarily gone — would leave the request hanging
+// with no response at all, which the browser cannot tell apart from a slow
+// network. Answering 502 lets profile.html say the email did not go out.
+app.post('/api/notify/appointment', cors(corsOptions), notifyLimiter, (req, res) => {
+  handleAppointmentNotification(req, res).catch((err) => {
+    console.error('Appointment notification failed:', err && err.message ? err.message : err);
+    if (!res.headersSent) {
+      res.status(502).json({ ok: false, error: 'Could not email the client.' });
+    }
+  });
 });
 
 // Serve only what the site actually needs, rather than exposing the repo
