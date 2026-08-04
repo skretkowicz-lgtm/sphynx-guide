@@ -9,16 +9,12 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
+const { createMailer } = require('./mail');
 
 const PORT = process.env.PORT || 3000;
 const PROJECT_ROOT = path.join(__dirname, '..');
 
-// Mail goes out over Resend's HTTPS API rather than SMTP. Railway (like
-// most hosts) blocks outbound SMTP ports to deter spam, so a direct
-// smtp.gmail.com connection hangs until it times out. Port 443 always
-// works, and using the same path locally keeps dev and prod identical.
 const REQUIRED_ENV = [
   'RESEND_API_KEY', 'MAIL_FROM', 'CONTACT_TO',
   'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
@@ -30,7 +26,10 @@ if (missingEnv.length) {
   process.exit(1);
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const mailer = createMailer({
+  apiKey: process.env.RESEND_API_KEY,
+  from: process.env.MAIL_FROM,
+});
 
 // Service-role key — full table access, bypasses Row Level Security. Only
 // ever used here, server-side. Never send this key to the browser.
@@ -161,15 +160,12 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
       console.error('Supabase insert threw:', err.message);
     });
 
-  // Resend reports failures as { error } rather than by rejecting, so
-  // normalise both shapes into one value the caller can check.
-  const mailed = resend.emails.send({
-    from: process.env.MAIL_FROM,
+  const mailed = mailer.send({
     to: process.env.CONTACT_TO,
     replyTo: formatReplyTo(name, email),
     subject: `Sphynx guide contact form — ${name}`,
     text: lines.join('\n'),
-  }).then(({ error }) => error || null, (err) => err);
+  });
 
   const [, mailError] = await Promise.all([saved, mailed]);
   if (mailError) {
