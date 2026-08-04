@@ -26,11 +26,14 @@ always works.
    notifications delivered to.
 2. Create an API key at https://resend.com/api-keys and put it in
    `RESEND_API_KEY`.
-3. Leave `MAIL_FROM` as `onboarding@resend.dev` unless you own a domain.
-   That shared sender needs no DNS setup but can **only** deliver to the
-   address you registered with Resend — which is exactly what's needed
-   here, since `CONTACT_TO` is your own inbox. To send from your own
-   domain, verify it at https://resend.com/domains first.
+3. Verify your sending domain at https://resend.com/domains (choose the
+   **EU region** — it keeps message data in the EU, which is what the
+   privacy notice promises) and set `MAIL_FROM` to an address on it.
+
+   The shared `onboarding@resend.dev` sender needs no DNS setup but can
+   **only** deliver to the address you registered with Resend. That is
+   enough for the notification, which goes to your own inbox, and silently
+   breaks the confirmation sent back to the visitor.
 
 ### Supabase (submission storage)
 
@@ -104,6 +107,10 @@ user would lock out everyone else.
 - Sends from `MAIL_FROM` with `replyTo` set to the visitor's address, so
   replying goes straight to them without spoofing the "from" address and
   risking SPF/DKIM failures.
+- Sends the visitor a confirmation of their own message, in whichever
+  language the page was in, with `replyTo` pointing back at `CONTACT_TO`.
+  Its failure is logged but never fails the request: the message has still
+  reached you, so reporting an error to the visitor would be a lie.
 - Sends plain text only (no HTML), so nothing a visitor types can inject
   markup or scripts into the email.
 - Mounts only the pages, `js/` and `images/`, so `server/`, `sql/` and

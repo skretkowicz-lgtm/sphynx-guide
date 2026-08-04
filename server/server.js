@@ -114,6 +114,65 @@ function formatReplyTo(name, email) {
   return display ? `"${display}" <${email}>` : email;
 }
 
+// Used only to link to the privacy notice from the confirmation email.
+// Deliberately NOT derived from the request's Host header: that is
+// attacker-controlled, and a link in an email we send to a visitor is
+// exactly where a spoofed host would do damage. Empty means the line is
+// simply left out.
+const SITE_URL = process.env.SITE_URL || process.env.ALLOWED_ORIGIN || '';
+
+// Confirms to the visitor that the message arrived, and gives them the copy
+// they would otherwise have no record of — the form clears on submit.
+//
+// This does mean the endpoint delivers visitor-typed text to a
+// visitor-supplied address, which is a modest abuse vector. The honeypot
+// and the 5-per-10-minutes rate limit are the controls; the sender is
+// unambiguously the site, and replies route back to CONTACT_TO rather than
+// to whoever filled the form in.
+function autoreplyBody(lang, name, message, behaviourist) {
+  const privacy = SITE_URL ? `${SITE_URL}/privacy.html` : '';
+  if (lang === 'pl') {
+    return [
+      // No name in the Polish greeting. Polish would need the vocative
+      // ("Panie Janie"), which cannot be derived from a free-text field —
+      // and a nominative full name after "Dzień dobry" reads like a form
+      // letter from an office. A bare greeting is simply correct.
+      'Dzień dobry,',
+      '',
+      'dziękujemy za wiadomość wysłaną przez sphynx.guide. To automatyczne potwierdzenie, że Twoje zapytanie do nas dotarło — nie musisz nic robić.',
+      '',
+      'Zazwyczaj odpowiadamy w ciągu 2 dni roboczych.',
+      behaviourist
+        ? '\nZaznaczono prośbę o konsultację behawiorystyczną, więc w odpowiedzi znajdziesz też informacje o przebiegu konsultacji i dostępnych terminach.'
+        : null,
+      '',
+      'Treść Twojej wiadomości:',
+      '',
+      message,
+      '',
+      'Jeśli chcesz coś dodać, po prostu odpowiedz na tego e-maila.',
+      privacy ? `\nTwoje dane wykorzystujemy wyłącznie do odpowiedzi na to zapytanie i przechowujemy je na terenie UE: ${privacy}` : null,
+    ].filter((line) => line !== null).join('\n');
+  }
+  return [
+    `Hello ${name},`,
+    '',
+    'Thank you for your message via sphynx.guide. This is an automatic confirmation that your enquiry reached us — there is nothing you need to do.',
+    '',
+    'We typically reply within 2 business days.',
+    behaviourist
+      ? '\nYou asked about a behaviourist consultation, so the reply will also cover how a session works and which times are free.'
+      : null,
+    '',
+    'What you sent:',
+    '',
+    message,
+    '',
+    'If you would like to add anything, just reply to this email.',
+    privacy ? `\nYour details are used only to answer this enquiry and are stored in the EU: ${privacy}` : null,
+  ].filter((line) => line !== null).join('\n');
+}
+
 app.options('/api/contact', cors(corsOptions));
 
 app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => {
@@ -130,6 +189,9 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
   const phone = stripControlChars(body.phone).slice(0, 30);
   const message = String(body.message || '').slice(0, 2000).trim();
   const behaviourist = body.behaviourist === true || body.behaviourist === 'yes';
+  // Anything other than the one language we have copy for falls back to
+  // English, rather than being interpolated anywhere.
+  const lang = body.lang === 'pl' ? 'pl' : 'en';
 
   if (!name || !email || !message) {
     return res.status(400).json({ ok: false, error: 'Name, email, and message are required.' });
@@ -167,7 +229,19 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
     text: lines.join('\n'),
   });
 
-  const [, mailError] = await Promise.all([saved, mailed]);
+  // Non-critical by design: if the visitor's copy fails, their message has
+  // still reached the behaviourist, and telling them it failed would be a
+  // lie. Sent concurrently so it costs the visitor no extra waiting.
+  const acknowledged = mailer.sendNonCritical({
+    to: email,
+    replyTo: process.env.CONTACT_TO,
+    subject: lang === 'pl'
+      ? 'Otrzymaliśmy Twoją wiadomość — Przewodnik po Sfinksie'
+      : "We've received your message — Canadian Sphynx Guide",
+    text: autoreplyBody(lang, name, message, behaviourist),
+  }, `autoreply to ${email}`);
+
+  const [, mailError] = await Promise.all([saved, mailed, acknowledged]);
   if (mailError) {
     console.error('Failed to send contact email:', mailError.message || mailError);
     return res.status(502).json({ ok: false, error: 'Could not send your message. Please try again later.' });
