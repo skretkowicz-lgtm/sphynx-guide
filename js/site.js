@@ -38,10 +38,16 @@
     if (kind) el.classList.add('status--' + kind);
   };
 
+  function choose(lang) {
+    setLang(lang);
+    window.rememberLang(lang);
+  }
+
   var btnEn = document.getElementById('btn-en');
   var btnPl = document.getElementById('btn-pl');
-  if (btnEn) btnEn.addEventListener('click', function () { setLang('en'); });
-  if (btnPl) btnPl.addEventListener('click', function () { setLang('pl'); });
+  if (btnEn) btnEn.addEventListener('click', function () { choose('en'); });
+  if (btnPl) btnPl.addEventListener('click', function () { choose('pl'); });
 
-  setLang('en');
+  // The browser's own languages decide the first paint; see js/lang.js.
+  setLang(window.preferredLang());
 })();

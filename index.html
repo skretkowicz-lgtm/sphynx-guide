@@ -705,22 +705,31 @@
   </p>
 </footer>
 
+<script src="js/lang.js"></script>
 <script>
   (function () {
     var root = document.documentElement;
     var btnEn = document.getElementById('btn-en');
     var btnPl = document.getElementById('btn-pl');
 
+    // Deliberately NOT root.lang: the stylesheet hides every [lang] element
+    // and reveals only the matching one, so a lang attribute on <html> would
+    // match `[lang] { display: none }` and blank the entire page.
     function setLang(lang) {
       root.setAttribute('data-lang', lang);
       btnEn.setAttribute('aria-pressed', String(lang === 'en'));
       btnPl.setAttribute('aria-pressed', String(lang === 'pl'));
     }
 
-    btnEn.addEventListener('click', function () { setLang('en'); });
-    btnPl.addEventListener('click', function () { setLang('pl'); });
+    function choose(lang) {
+      setLang(lang);
+      window.rememberLang(lang);
+    }
 
-    setLang('en');
+    btnEn.addEventListener('click', function () { choose('en'); });
+    btnPl.addEventListener('click', function () { choose('pl'); });
+
+    setLang(window.preferredLang());
   })();
 
   (function () {
