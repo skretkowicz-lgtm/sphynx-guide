@@ -178,6 +178,40 @@
   .doc-item .meta { color: var(--ink-soft); font-size: 0.82rem; margin-top: 0.2rem; }
   .doc-item button.link-btn { flex: none; }
 
+  /* Leads reuse .consult-item's frame; only what a lead has and an
+     appointment doesn't is defined here. */
+  .lead-item .who { font-weight: 600; }
+  .lead-item .contact { font-size: 0.82rem; margin-top: 0.2rem; }
+  .lead-item .contact a { color: var(--accent); }
+  /* Whitespace is preserved: visitors write in paragraphs, and collapsing
+     them turns a considered message into a wall. */
+  .lead-item .message {
+    color: var(--ink-soft); font-size: 0.9rem; margin-top: 0.5rem;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .lead-item .lead-left { min-width: 0; }
+  /* A new lead is the one row on this page that wants to be noticed. */
+  .badge--new { background: var(--danger); color: var(--surface); }
+  .lead-handled { opacity: 0.6; }
+
+  .lead-note { margin-top: 0.6rem; font-size: 0.82rem; }
+  .lead-note summary { cursor: pointer; color: var(--ink-soft); }
+  .lead-note summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .lead-note textarea {
+    font: inherit; font-size: 0.85rem; width: 100%; margin-top: 0.4rem;
+    background: var(--ground); border: 1px solid var(--line);
+    border-radius: 4px; padding: 0.5rem 0.6rem; color: var(--ink);
+    min-height: 4rem; resize: vertical;
+  }
+  .lead-note-actions { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.4rem; }
+
+  .lead-filter { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .lead-filter select {
+    font: inherit; font-size: 0.85rem; background: var(--ground);
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: 0.4rem 0.6rem; color: var(--ink);
+  }
+
   form.stacked { display: grid; gap: 1rem; }
   .field { display: grid; gap: 0.35rem; }
   .field label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
@@ -361,6 +395,30 @@
           <span lang="en">All times are Warsaw time (Europe/Warsaw).</span>
           <span lang="pl">Wszystkie godziny w czasie warszawskim (Europa/Warszawa).</span>
         </p>
+      </section>
+
+      <!-- Contact-form submissions. These come from people who may have no
+           account at all, so they sit above the client picker: a lead is
+           what precedes a client, not a property of one. -->
+      <section class="panel">
+        <h2>
+          <span lang="en">Enquiries</span><span lang="pl">Zapytania</span>
+          <span class="badge badge--new" id="lead-count" hidden></span>
+        </h2>
+        <div class="lead-filter">
+          <label for="lead-filter-select">
+            <span lang="en">Show</span><span lang="pl">Pokaż</span>
+          </label>
+          <select id="lead-filter-select">
+            <option value="new" lang="en">New only</option>
+            <option value="new" lang="pl">Tylko nowe</option>
+            <option value="open" lang="en">Open (new + contacted)</option>
+            <option value="open" lang="pl">Otwarte (nowe + skontaktowane)</option>
+            <option value="all" lang="en">All</option>
+            <option value="all" lang="pl">Wszystkie</option>
+          </select>
+        </div>
+        <ul class="list" id="lead-list"></ul>
       </section>
 
       <section class="panel">
@@ -568,6 +626,36 @@
       cancelled: { en: 'Cancelled', pl: 'Odwołana' },
       no_show: { en: 'No-show', pl: 'Nieobecność' },
     };
+    // Keep in step with the status check constraint in sql/006_….
+    var LEAD_STATUS_LABELS = {
+      new: { en: 'New', pl: 'Nowe' },
+      contacted: { en: 'Contacted', pl: 'Skontaktowano' },
+      converted: { en: 'Converted', pl: 'Klient' },
+      archived: { en: 'Archived', pl: 'Zarchiwizowane' },
+    };
+    // The moves offered from each state, in workflow order. 'archived' is
+    // the escape hatch from anywhere and 'new' the way back out of it, so
+    // nothing is a dead end — there is no delete, since a lead is a record
+    // of someone having written to you.
+    var LEAD_TRANSITIONS = {
+      new: [
+        { to: 'contacted', en: 'Mark contacted', pl: 'Skontaktowano' },
+        { to: 'archived', en: 'Archive', pl: 'Archiwizuj' },
+      ],
+      contacted: [
+        { to: 'converted', en: 'Became a client', pl: 'Został klientem' },
+        { to: 'archived', en: 'Archive', pl: 'Archiwizuj' },
+      ],
+      converted: [{ to: 'archived', en: 'Archive', pl: 'Archiwizuj' }],
+      archived: [{ to: 'new', en: 'Reopen', pl: 'Przywróć' }],
+    };
+    // Which statuses each filter option shows. Held here rather than in the
+    // query because the whole list is fetched once (see loadLeads).
+    var LEAD_FILTERS = {
+      new: ['new'],
+      open: ['new', 'contacted'],
+      all: ['new', 'contacted', 'converted', 'archived'],
+    };
 
     var app = document.getElementById('app');
     var loadingEl = document.getElementById('loading');
@@ -577,10 +665,16 @@
     // data-driven rows (dates, badges) that the CSS mechanism can't reach.
     var rerender = null;
 
+    // innerHTML on a text node escapes & < > but leaves quotes alone, which
+    // is safe for text content and NOT safe inside an attribute — a value
+    // holding a double quote would close the attribute and start a new one.
+    // Several call sites below interpolate into href="…", so the quotes are
+    // escaped here rather than relying on every caller to remember. As HTML
+    // entities they still render as ordinary quote characters.
     function esc(str) {
       var div = document.createElement('div');
       div.textContent = str == null ? '' : String(str);
-      return div.innerHTML;
+      return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     function t(en, pl) { return window.isPl() ? pl : en; }
@@ -666,6 +760,129 @@
         li.appendChild(btn);
         return li;
       });
+    }
+
+    // One enquiry from the contact form. Everything on it except status and
+    // internal_note was typed by a stranger, so this builds the contact line
+    // with DOM calls rather than innerHTML — an address is going into an
+    // href, and that is the one context where getting escaping wrong is
+    // exploitable rather than merely ugly.
+    function leadItem(row, onChanged) {
+      var li = document.createElement('li');
+      li.className = 'consult-item lead-item' + (row.status === 'new' ? '' : ' lead-handled');
+
+      var left = document.createElement('div');
+      left.className = 'lead-left';
+
+      var who = document.createElement('div');
+      who.className = 'who';
+      who.textContent = row.name;
+      left.appendChild(who);
+
+      var contact = document.createElement('div');
+      contact.className = 'contact';
+      var mail = document.createElement('a');
+      mail.href = 'mailto:' + row.email;
+      mail.textContent = row.email;
+      contact.appendChild(mail);
+      if (row.phone) {
+        contact.appendChild(document.createTextNode(' · '));
+        var tel = document.createElement('a');
+        tel.href = 'tel:' + row.phone.replace(/[^\d+]/g, '');
+        tel.textContent = row.phone;
+        contact.appendChild(tel);
+      }
+      left.appendChild(contact);
+
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = fmtDateTime(row.created_at);
+      left.appendChild(meta);
+
+      var message = document.createElement('div');
+      message.className = 'message';
+      message.textContent = row.message;
+      left.appendChild(message);
+
+      // <details> so a long list stays scannable, and so the note is never
+      // the thing you have to scroll past to reach the next enquiry.
+      var note = document.createElement('details');
+      note.className = 'lead-note';
+      var summary = document.createElement('summary');
+      summary.textContent = row.internal_note
+        ? t('Private note', 'Notatka prywatna')
+        : t('Add a private note', 'Dodaj notatkę prywatną');
+      note.appendChild(summary);
+      // Open by default when there is something to read, so an existing note
+      // is never hidden behind a click.
+      note.open = !!row.internal_note;
+
+      var textarea = document.createElement('textarea');
+      textarea.value = row.internal_note || '';
+      textarea.setAttribute('aria-label', t('Private note', 'Notatka prywatna'));
+      note.appendChild(textarea);
+
+      var noteActions = document.createElement('div');
+      noteActions.className = 'lead-note-actions';
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'link-btn';
+      saveBtn.textContent = t('Save note', 'Zapisz notatkę');
+      var noteStatus = document.createElement('span');
+      noteStatus.className = 'status';
+      saveBtn.addEventListener('click', function () {
+        saveBtn.disabled = true;
+        updateLead(row.id, { internal_note: textarea.value.trim() || null }, function (ok, message) {
+          saveBtn.disabled = false;
+          window.setStatus(noteStatus, ok ? t('Saved.', 'Zapisano.') : message, ok ? 'success' : 'error');
+          // Deliberately no refresh: re-rendering would collapse the note
+          // that was just written and throw away the confirmation.
+        });
+      });
+      noteActions.appendChild(saveBtn);
+      noteActions.appendChild(noteStatus);
+      note.appendChild(noteActions);
+      left.appendChild(note);
+
+      var badges = document.createElement('span');
+      badges.className = 'badge-group';
+
+      var statusBadge = document.createElement('span');
+      statusBadge.className = 'badge' + (row.status === 'new' ? ' badge--new' : '');
+      statusBadge.textContent = labelFrom(LEAD_STATUS_LABELS, row.status);
+      badges.appendChild(statusBadge);
+
+      // The checkbox on the form is the whole triage signal: it separates a
+      // "what do they eat" question from someone asking for a session.
+      if (row.behaviourist) {
+        var wants = document.createElement('span');
+        wants.className = 'badge';
+        wants.textContent = t('Wants a session', 'Chce konsultacji');
+        badges.appendChild(wants);
+      }
+
+      (LEAD_TRANSITIONS[row.status] || []).forEach(function (move) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'link-btn';
+        btn.textContent = t(move.en, move.pl);
+        btn.addEventListener('click', function () {
+          btn.disabled = true;
+          updateLead(row.id, { status: move.to }, function (ok, message) {
+            btn.disabled = false;
+            if (!ok) {
+              alert(message);
+              return;
+            }
+            onChanged();
+          });
+        });
+        badges.appendChild(btn);
+      });
+
+      li.appendChild(left);
+      li.appendChild(badges);
+      return li;
     }
 
     // Builds one appointment row. `nameFor` is supplied only by the
@@ -756,6 +973,41 @@
         upcoming.reverse();
         onLoaded(upcoming, past);
       });
+    }
+
+    // The whole list, newest first, filtered in JS. contact_submissions is
+    // low-volume by nature (one form, rate-limited to 5 per 10 minutes) and
+    // fetching it whole is what makes the "new" count and the filter
+    // instant, with no second query.
+    function loadLeads(onLoaded, onError) {
+      return window.sb.from('contact_submissions').select('*')
+        .order('created_at', { ascending: false })
+        .then(function (result) {
+          if (result.error) {
+            onError(result.error.message);
+            return;
+          }
+          onLoaded(result.data || []);
+        });
+    }
+
+    // .select() for the same reason as updateAppointmentStatus: without it
+    // an RLS-blocked update is indistinguishable from a successful one.
+    // Reports back rather than alerting, because the two callers want to
+    // surface failure differently — inline for a note, modal for a status.
+    function updateLead(id, patch, done) {
+      window.sb.from('contact_submissions').update(patch).eq('id', id).select()
+        .then(function (result) {
+          if (result.error) {
+            done(false, result.error.message);
+            return;
+          }
+          if (!(result.data || []).length) {
+            done(false, t('Could not update the enquiry.', 'Nie udało się zaktualizować zapytania.'));
+            return;
+          }
+          done(true);
+        });
     }
 
     function updateAppointmentStatus(id, status, afterwards) {
@@ -908,6 +1160,39 @@
       function refreshDocs() {
         return loadList('documents', 'created_at', picker.value, docList, renderDocuments);
       }
+
+      var leadList = document.getElementById('lead-list');
+      var leadFilter = document.getElementById('lead-filter-select');
+      var leadCount = document.getElementById('lead-count');
+      // Held so the filter can re-render without re-querying.
+      var leads = [];
+
+      function renderLeads() {
+        var allowed = LEAD_FILTERS[leadFilter.value] || LEAD_FILTERS.new;
+        var shown = leads.filter(function (row) { return allowed.indexOf(row.status) !== -1; });
+
+        var newCount = leads.filter(function (row) { return row.status === 'new'; }).length;
+        leadCount.hidden = newCount === 0;
+        leadCount.textContent = t(newCount + ' new', newCount + ' nowe');
+
+        renderList(leadList, shown,
+          // The empty state depends on the filter: "nothing new" is good
+          // news, "nothing at all" is a different thing to say.
+          leads.length
+            ? t('Nothing matching this filter.', 'Brak zapytań pasujących do filtra.')
+            : t('No enquiries yet.', 'Brak zapytań.'),
+          function (row) { return leadItem(row, refreshLeads); });
+      }
+
+      function refreshLeads() {
+        return loadLeads(function (rows) {
+          leads = rows;
+          renderLeads();
+        }, function (msg) { renderListError(leadList, msg); });
+      }
+
+      leadFilter.addEventListener('change', renderLeads);
+      refreshLeads();
 
       var upcomingList = document.getElementById('beh-appt-upcoming');
       var pastList = document.getElementById('beh-appt-past');
@@ -1072,6 +1357,7 @@
       });
 
       rerender = function () {
+        renderLeads(); // from the rows already held, so no refetch
         refreshAllAppointments(); // renders whether or not a client is picked
         if (picker.value) { refreshClientAppointments(); refreshConsultations(); refreshDocs(); }
       };
