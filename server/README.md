@@ -111,6 +111,18 @@ user would lock out everyone else.
   language the page was in, with `replyTo` pointing back at `CONTACT_TO`.
   Its failure is logged but never fails the request: the message has still
   reached you, so reporting an error to the visitor would be a lie.
+- Throttles that confirmation to **one per recipient address per hour**.
+  Both the recipient and the message body are chosen by whoever fills the
+  form, so without this the endpoint will deliver arbitrary text to anyone,
+  from an address you own and DKIM-sign. The per-IP limit does not help
+  there — IPs are cheap. Submissions and your own notification are never
+  throttled; only the duplicate confirmation is skipped, and the skip is
+  logged, because a burst of them is what abuse looks like.
+
+  The counter lives in memory, so it resets on redeploy and is per-instance.
+  That is fine for a single replica. If this is ever scaled out, move it to
+  the database — `contact_submissions` already records `email` and
+  `created_at`.
 - Emails the client when an appointment is created, cancelled or reinstated,
   via `POST /api/notify/appointment` (see below).
 

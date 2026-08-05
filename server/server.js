@@ -173,6 +173,54 @@ function autoreplyBody(lang, name, message, behaviourist) {
   ].filter((line) => line !== null).join('\n');
 }
 
+// Per-recipient throttle for the confirmation email.
+//
+// contactLimiter caps how fast one IP can post, which does nothing about the
+// abuse this endpoint actually enables: both the recipient AND the message
+// body are chosen by whoever fills the form, so it can deliver arbitrary text
+// to anyone, from a DKIM-signed address this practice owns. Rotating IPs
+// defeats a per-IP limit outright; capping per RECIPIENT is what bounds how
+// much any one person can be made to receive.
+//
+// Deliberately does not block the submission or the notification to the
+// behaviourist. A genuine second enquiry from the same person within the hour
+// is normal and must still reach her; only their duplicate confirmation is
+// skipped.
+//
+// Held in memory, so it resets on redeploy and is per-instance. The service
+// runs a single replica, which makes that fine. If it is ever scaled out this
+// needs to move to the database, where contact_submissions already records
+// email and created_at.
+const AUTOREPLY_WINDOW_MS = 60 * 60 * 1000;
+// Bounds memory if someone floods the form with unique addresses.
+const AUTOREPLY_MAX_TRACKED = 5000;
+const autoreplySentAt = new Map();
+
+function mayAutoreply(email) {
+  const key = email.toLowerCase();
+  const now = Date.now();
+  const last = autoreplySentAt.get(key);
+  if (last !== undefined && now - last < AUTOREPLY_WINDOW_MS) return false;
+
+  if (autoreplySentAt.size >= AUTOREPLY_MAX_TRACKED) {
+    for (const [addr, sentAt] of autoreplySentAt) {
+      if (now - sentAt >= AUTOREPLY_WINDOW_MS) autoreplySentAt.delete(addr);
+    }
+    // Still full of live entries: drop the least recent so a flood of unique
+    // addresses cannot pin the map and lock everyone else out.
+    if (autoreplySentAt.size >= AUTOREPLY_MAX_TRACKED) {
+      const oldest = autoreplySentAt.keys().next().value;
+      if (oldest !== undefined) autoreplySentAt.delete(oldest);
+    }
+  }
+
+  // delete-then-set so insertion order tracks recency, which is what makes
+  // the eviction above evict the right entry.
+  autoreplySentAt.delete(key);
+  autoreplySentAt.set(key, now);
+  return true;
+}
+
 app.options('/api/contact', cors(corsOptions));
 
 app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => {
@@ -232,14 +280,25 @@ app.post('/api/contact', cors(corsOptions), contactLimiter, async (req, res) => 
   // Non-critical by design: if the visitor's copy fails, their message has
   // still reached the behaviourist, and telling them it failed would be a
   // lie. Sent concurrently so it costs the visitor no extra waiting.
-  const acknowledged = mailer.sendNonCritical({
-    to: email,
-    replyTo: process.env.CONTACT_TO,
-    subject: lang === 'pl'
-      ? 'Otrzymaliśmy Twoją wiadomość — Przewodnik po Sfinksie'
-      : "We've received your message — Canadian Sphynx Guide",
-    text: autoreplyBody(lang, name, message, behaviourist),
-  }, `autoreply to ${email}`);
+  //
+  // Recorded as sent before the attempt rather than after. The cost is that a
+  // genuine resubmission gets no second confirmation if the first send failed;
+  // the alternative is that a failing send lets an attacker retry freely,
+  // which is the case this limit exists for.
+  let acknowledged = Promise.resolve(null);
+  if (mayAutoreply(email)) {
+    acknowledged = mailer.sendNonCritical({
+      to: email,
+      replyTo: process.env.CONTACT_TO,
+      subject: lang === 'pl'
+        ? 'Otrzymaliśmy Twoją wiadomość — Przewodnik po Sfinksie'
+        : "We've received your message — Canadian Sphynx Guide",
+      text: autoreplyBody(lang, name, message, behaviourist),
+    }, `autoreply to ${email}`);
+  } else {
+    // Worth a line in the logs: a burst of these is what abuse looks like.
+    console.warn(`Autoreply skipped, already sent within the hour: ${email}`);
+  }
 
   const [, mailError] = await Promise.all([saved, mailed, acknowledged]);
   if (mailError) {
