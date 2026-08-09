@@ -6,7 +6,9 @@
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
-    "test:contact": "node server/scripts/test-contact-form.js"
+    "test:contact": "node server/scripts/test-contact-form.js",
+    "seed:demo": "node server/scripts/seed-demo-data.js",
+    "seed:demo:purge": "node server/scripts/seed-demo-data.js --purge"
   },
   "engines": {
     "node": "22.x"
